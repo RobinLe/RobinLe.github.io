@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+ <title>robin Lee</title>
+ <link href="http://192.168.1.109:4000/atom.xml" rel="self"/>
+ <link href="http://192.168.1.109:4000/"/>
+ <updated>2017-01-02T23:55:15+08:00</updated>
+ <id>http://192.168.1.109:4000</id>
+ <author>
+   <name>robin Lee</name>
+   <email></email>
+ </author>
+
+ 
+ <entry>
+   <title>Kubernetes容器化部署</title>
+   <link href="http://192.168.1.109:4000/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2.html"/>
+   <updated>2016-12-29T00:00:00+08:00</updated>
+   <id>http://192.168.1.109:4000/2016/12/29/Kubernetes容器化部署</id>
+   <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
+
+&lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
+
+&lt;p&gt;Kubernetes部署方式分为两种，二进制方式或容器化方式&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;二进制：直接部署所有组件到主机&lt;/li&gt;
+  &lt;li&gt;容器化：所有组件在容器内方式运行&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;容器部署kubernetes&quot;&gt;容器部署Kubernetes&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;一、依赖&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;docker-engine 1.12&lt;/li&gt;
+  &lt;li&gt;ubuntu16.04&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;二、下载安装包&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;下载&lt;a href=&quot;\\192.168.3.36\lan_share_robin\k8s_install_images.tar.gz&quot;&gt;k8s_install_images&lt;/a&gt;到&lt;strong&gt;master&lt;/strong&gt;和&lt;strong&gt;slave&lt;/strong&gt;机器，解压安装包，赋予&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;可执行权限&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/1.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@k8s-master:/home/ubuntu# tar xzf k8s_install_images.tar.gz 
+root@k8s-master:/home/ubuntu# ls
+k8s_install_images  k8s_install_images.tar.gz
+root@k8s-master:/home/ubuntu# cd k8s_install_images
+root@k8s-master:/home/ubuntu/k8s_install_images# ls
+16.04-xenial  flannel.yaml  images  setup.sh
+root@k8s-master:/home/ubuntu/k8s_install_images# chmod +x setup.sh 
+root@k8s-master:/home/ubuntu/k8s_install_images# 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2.PNG&quot; alt=&quot;file:///2.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;执行&lt;code class=&quot;highlighter-rouge&quot;&gt;./setup.sh&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;会自动安装&lt;strong&gt;kubectl&lt;/strong&gt;，&lt;strong&gt;kubernetes-cni&lt;/strong&gt;，&lt;strong&gt;kubelet&lt;/strong&gt;，&lt;strong&gt;kubeadm&lt;/strong&gt;组件&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/3.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;并且会自动导入&lt;strong&gt;docker&lt;/strong&gt;镜像&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/4.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;docker images&lt;/code&gt;查看&lt;strong&gt;master&lt;/strong&gt;机器k8s组件镜像信息&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/5.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用&lt;strong&gt;kubeadm&lt;/strong&gt;初始化&lt;strong&gt;master&lt;/strong&gt;节点，需要定义pod私有地址范围（不要和主机私有地址范围冲突）&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@k8s-master:/home/ubuntu/# kubeadm init --pod-network-cidr=10.244.0.0/16
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/6.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;重要：记录&lt;code class=&quot;highlighter-rouge&quot;&gt;kubeadm join --token=&lt;/code&gt;信息，因为slave需要该条指令加入集群&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;创建&lt;strong&gt;flannel&lt;/strong&gt;网络容器&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@k8s-master:/home/ubuntu/k8s_install_images# kubectl apply -f flannel.yaml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/7.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用&lt;strong&gt;kubectl&lt;/strong&gt;查看kubernetes组件运行情况&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kubectl get pods --all-namespaces
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/8.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;向&lt;strong&gt;kubernetes&lt;/strong&gt;集群添加&lt;strong&gt;slave&lt;/strong&gt;节点&lt;/p&gt;
+
+&lt;p&gt;下载k8s_install_images安装包，解压，执行&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;同上，安装完&lt;strong&gt;kubeadm&lt;/strong&gt;，&lt;strong&gt;kubectl&lt;/strong&gt;，&lt;strong&gt;kubelet&lt;/strong&gt;等组件后执行&lt;strong&gt;master&lt;/strong&gt;节点初始化后输出的&lt;code class=&quot;highlighter-rouge&quot;&gt;kubeadm join&lt;/code&gt;指令&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;kubeadm join --token=5ac10b.060d697903aae36d 192.168.3.48
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/9.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在&lt;strong&gt;master&lt;/strong&gt;节点查看集群情况&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/10.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Kubernetes二进制部署</title>
+   <link href="http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2.html"/>
+   <updated>2016-12-29T00:00:00+08:00</updated>
+   <id>http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes二进制部署</id>
+   <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
+
+&lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
+
+&lt;p&gt;Kubernetes部署方式分为两种，二进制方式或容器化方式&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;二进制：直接部署所有组件到主机&lt;/li&gt;
+  &lt;li&gt;容器化：所有组件在容器内方式运行&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;二进制部署kubernetes&quot;&gt;二进制部署Kubernetes&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;一、依赖&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;docker-engine 1.12&lt;/li&gt;
+  &lt;li&gt;ubuntu14.04&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;二、下载安装包&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;下载&lt;a href=&quot;\\192.168.3.36\lan_share_robin\k8s_install_binaries.tar.gz&quot;&gt;k8s_install_binaries&lt;/a&gt;到&lt;strong&gt;master&lt;/strong&gt;机器，解压安装包&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/11.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;进入&lt;code class=&quot;highlighter-rouge&quot;&gt;cluster&lt;/code&gt;目录，编辑&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;脚本文件&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/12.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/13.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;需要根据具体部署的集群信息更新&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;脚本文件&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;nodes&lt;/strong&gt;：所有节点信息&lt;code class=&quot;highlighter-rouge&quot;&gt;username@ip&lt;/code&gt;，以空格分开，第一个默认为&lt;strong&gt;master&lt;/strong&gt;节点&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;roles&lt;/strong&gt;：&lt;code class=&quot;highlighter-rouge&quot;&gt;a代表master&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;i代表node&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;ai代表master node&lt;/code&gt;，定义&lt;strong&gt;nodes&lt;/strong&gt;参数所有节点的角色信息&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;NUM_NODES&lt;/strong&gt;：节点数量，集群共有多少节点&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;SERVICE_CLUSTER_IP_RANGE&lt;/strong&gt;：定义&lt;code class=&quot;highlighter-rouge&quot;&gt;service IP&lt;/code&gt;范围，给定一个&lt;strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;私有IP&lt;/code&gt;&lt;/strong&gt;范围，确保不要和&lt;code class=&quot;highlighter-rouge&quot;&gt;本地私有IP &lt;/code&gt;&lt;strong&gt;冲突&lt;/strong&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;FLANNEL_NET&lt;/strong&gt;：定义&lt;code class=&quot;highlighter-rouge&quot;&gt;flannel overlay&lt;/code&gt;网络地址，确保不要与&lt;strong&gt;SERVICE_CLUSTER_IP_RANGE&lt;/strong&gt;冲突。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;赋予&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;执行权限，并执行&lt;code class=&quot;highlighter-rouge&quot;&gt;setup.sh&lt;/code&gt;脚本&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;重要：如果机器没有&lt;code class=&quot;highlighter-rouge&quot;&gt;ssh&lt;/code&gt;秘钥，则生成秘钥文件，可以不输入直接回车自动生成&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/14.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;安装过程中，需要输入多次&lt;strong&gt;master&lt;/strong&gt;节点和&lt;strong&gt;node&lt;/strong&gt;节点的密码信息，执行结束会得到如下提示&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/15.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;master&lt;/strong&gt;节点查看节点信息，验证集群状态&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# kubectl get nodes
+NAME           STATUS    AGE
+192.168.3.44   Ready     5m
+192.168.3.48   Ready     4m
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/16.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# ps -ef
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/17.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+
+</feed>

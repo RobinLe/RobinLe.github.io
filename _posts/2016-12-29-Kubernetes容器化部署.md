@@ -3,9 +3,6 @@ layout: post
 title: Kubernetes容器化部署
 ---
 
-> 2016-12-29    robin Lee    miaomiao3312763@qq.com
-
-
 
 本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对**裸机或虚拟机**环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。
 
@@ -36,7 +33,7 @@ Kubernetes部署方式分为两种，二进制方式或容器化方式
 
 下载[k8s_install_images](\\192.168.3.36\lan_share_robin\k8s_install_images.tar.gz)到**master**和**slave**机器，解压安装包，赋予`setup.sh`可执行权限
 
-![](file:///./images/1.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/1.PNG)
 
 ```
 root@k8s-master:/home/ubuntu# tar xzf k8s_install_images.tar.gz 
@@ -49,21 +46,21 @@ root@k8s-master:/home/ubuntu/k8s_install_images# chmod +x setup.sh
 root@k8s-master:/home/ubuntu/k8s_install_images# 
 ```
 
-![file:///2.png](file:///./images/2.png)
+![file:///2.png](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2.PNG)
 
 
 
 执行`./setup.sh`，`setup.sh`会自动安装**kubectl**，**kubernetes-cni**，**kubelet**，**kubeadm**组件
 
-![](file:///./images/3.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/3.PNG)
 
 并且会自动导入**docker**镜像
 
-![](file:///./images/4.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/4.PNG)
 
 使用`docker images`查看**master**机器k8s组件镜像信息
 
-![](file:///./images/5.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/5.PNG)
 
 
 
@@ -73,7 +70,7 @@ root@k8s-master:/home/ubuntu/k8s_install_images#
 root@k8s-master:/home/ubuntu/# kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
 
-![](file:///./images/6.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/6.PNG)
 
 **重要：记录`kubeadm join --token=`信息，因为slave需要该条指令加入集群**
 
@@ -83,7 +80,7 @@ root@k8s-master:/home/ubuntu/# kubeadm init --pod-network-cidr=10.244.0.0/16
 root@k8s-master:/home/ubuntu/k8s_install_images# kubectl apply -f flannel.yaml
 ```
 
-![](file:///./images/7.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/7.PNG)
 
 使用**kubectl**查看kubernetes组件运行情况
 
@@ -91,7 +88,7 @@ root@k8s-master:/home/ubuntu/k8s_install_images# kubectl apply -f flannel.yaml
 kubectl get pods --all-namespaces
 ```
 
-![](file:///./images/8.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/8.PNG)
 
 
 
@@ -103,10 +100,10 @@ kubectl get pods --all-namespaces
 kubeadm join --token=5ac10b.060d697903aae36d 192.168.3.48
 ```
 
-![](file:///./images/9.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/9.PNG)
 
 
 
 在**master**节点查看集群情况
 
-![](file:///./images/10.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/10.PNG)

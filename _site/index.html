@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      robin Lee &middot; robin Lee's Blog.
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/poole.css">
+  <link rel="stylesheet" href="/public/css/syntax.css">
+  <link rel="stylesheet" href="/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/public/apple-touch-icon-144-precomposed.png">
+                                 <link rel="shortcut icon" href="/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body class="layout-reverse">
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1>
+        <a href="/">
+          robin Lee
+        </a>
+      </h1>
+      <p class="lead"></p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item active" href="/">主页</a>
+
+      
+
+      
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about.html">简介</a>
+          
+        
+      
+        
+      
+        
+          
+        
+      
+
+      <!--<a class="sidebar-nav-item" href="/archive/v.zip">Download</a>
+      <a class="sidebar-nav-item" href="">GitHub project</a>
+      <span class="sidebar-nav-item">Currently v</span>-->
+    </nav>
+
+    <p>&copy; 2017. All rights reserved.</p>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="posts">
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2.html">
+        Kubernetes容器化部署
+      </a>
+    </h1>
+
+    <span class="post-date">29 Dec 2016</span>
+
+    <p>本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对<strong>裸机或虚拟机</strong>环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。</p>
+
+<h3 id="部署方式">部署方式</h3>
+
+<p>Kubernetes部署方式分为两种，二进制方式或容器化方式</p>
+
+<ol>
+  <li>二进制：直接部署所有组件到主机</li>
+  <li>容器化：所有组件在容器内方式运行</li>
+</ol>
+
+<hr />
+
+<h3 id="容器部署kubernetes">容器部署Kubernetes</h3>
+
+<p><strong>一、依赖</strong></p>
+
+<ul>
+  <li>docker-engine 1.12</li>
+  <li>ubuntu16.04</li>
+</ul>
+
+<p><strong>二、下载安装包</strong></p>
+
+<p>下载<a href="\\192.168.3.36\lan_share_robin\k8s_install_images.tar.gz">k8s_install_images</a>到<strong>master</strong>和<strong>slave</strong>机器，解压安装包，赋予<code class="highlighter-rouge">setup.sh</code>可执行权限</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/1.PNG" alt="" /></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu# tar xzf k8s_install_images.tar.gz 
+root@k8s-master:/home/ubuntu# ls
+k8s_install_images  k8s_install_images.tar.gz
+root@k8s-master:/home/ubuntu# cd k8s_install_images
+root@k8s-master:/home/ubuntu/k8s_install_images# ls
+16.04-xenial  flannel.yaml  images  setup.sh
+root@k8s-master:/home/ubuntu/k8s_install_images# chmod +x setup.sh 
+root@k8s-master:/home/ubuntu/k8s_install_images# 
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2.PNG" alt="file:///2.png" /></p>
+
+<p>执行<code class="highlighter-rouge">./setup.sh</code>，<code class="highlighter-rouge">setup.sh</code>会自动安装<strong>kubectl</strong>，<strong>kubernetes-cni</strong>，<strong>kubelet</strong>，<strong>kubeadm</strong>组件</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/3.PNG" alt="" /></p>
+
+<p>并且会自动导入<strong>docker</strong>镜像</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/4.PNG" alt="" /></p>
+
+<p>使用<code class="highlighter-rouge">docker images</code>查看<strong>master</strong>机器k8s组件镜像信息</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/5.PNG" alt="" /></p>
+
+<p>使用<strong>kubeadm</strong>初始化<strong>master</strong>节点，需要定义pod私有地址范围（不要和主机私有地址范围冲突）</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/# kubeadm init --pod-network-cidr=10.244.0.0/16
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/6.PNG" alt="" /></p>
+
+<p><strong>重要：记录<code class="highlighter-rouge">kubeadm join --token=</code>信息，因为slave需要该条指令加入集群</strong></p>
+
+<p>创建<strong>flannel</strong>网络容器</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/k8s_install_images# kubectl apply -f flannel.yaml
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/7.PNG" alt="" /></p>
+
+<p>使用<strong>kubectl</strong>查看kubernetes组件运行情况</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>kubectl get pods --all-namespaces
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/8.PNG" alt="" /></p>
+
+<p>向<strong>kubernetes</strong>集群添加<strong>slave</strong>节点</p>
+
+<p>下载k8s_install_images安装包，解压，执行<code class="highlighter-rouge">setup.sh</code>同上，安装完<strong>kubeadm</strong>，<strong>kubectl</strong>，<strong>kubelet</strong>等组件后执行<strong>master</strong>节点初始化后输出的<code class="highlighter-rouge">kubeadm join</code>指令</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>kubeadm join --token=5ac10b.060d697903aae36d 192.168.3.48
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/9.PNG" alt="" /></p>
+
+<p>在<strong>master</strong>节点查看集群情况</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/10.PNG" alt="" /></p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2.html">
+        Kubernetes二进制部署
+      </a>
+    </h1>
+
+    <span class="post-date">29 Dec 2016</span>
+
+    <p>本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对<strong>裸机或虚拟机</strong>环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。</p>
+
+<h3 id="部署方式">部署方式</h3>
+
+<p>Kubernetes部署方式分为两种，二进制方式或容器化方式</p>
+
+<ol>
+  <li>二进制：直接部署所有组件到主机</li>
+  <li>容器化：所有组件在容器内方式运行</li>
+</ol>
+
+<hr />
+
+<h3 id="二进制部署kubernetes">二进制部署Kubernetes</h3>
+
+<p><strong>一、依赖</strong></p>
+
+<ul>
+  <li>docker-engine 1.12</li>
+  <li>ubuntu14.04</li>
+</ul>
+
+<p><strong>二、下载安装包</strong></p>
+
+<p>下载<a href="\\192.168.3.36\lan_share_robin\k8s_install_binaries.tar.gz">k8s_install_binaries</a>到<strong>master</strong>机器，解压安装包</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/11.PNG" alt="" /></p>
+
+<p>进入<code class="highlighter-rouge">cluster</code>目录，编辑<code class="highlighter-rouge">setup.sh</code>脚本文件</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/12.PNG" alt="" /></p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/13.PNG" alt="" /></p>
+
+<p>需要根据具体部署的集群信息更新<code class="highlighter-rouge">setup.sh</code>脚本文件</p>
+
+<ul>
+  <li><strong>nodes</strong>：所有节点信息<code class="highlighter-rouge">username@ip</code>，以空格分开，第一个默认为<strong>master</strong>节点</li>
+  <li><strong>roles</strong>：<code class="highlighter-rouge">a代表master</code>，<code class="highlighter-rouge">i代表node</code>，<code class="highlighter-rouge">ai代表master node</code>，定义<strong>nodes</strong>参数所有节点的角色信息</li>
+  <li><strong>NUM_NODES</strong>：节点数量，集群共有多少节点</li>
+  <li><strong>SERVICE_CLUSTER_IP_RANGE</strong>：定义<code class="highlighter-rouge">service IP</code>范围，给定一个<strong><code class="highlighter-rouge">私有IP</code></strong>范围，确保不要和<code class="highlighter-rouge">本地私有IP </code><strong>冲突</strong></li>
+  <li><strong>FLANNEL_NET</strong>：定义<code class="highlighter-rouge">flannel overlay</code>网络地址，确保不要与<strong>SERVICE_CLUSTER_IP_RANGE</strong>冲突。</li>
+</ul>
+
+<p>赋予<code class="highlighter-rouge">setup.sh</code>执行权限，并执行<code class="highlighter-rouge">setup.sh</code>脚本</p>
+
+<p><strong>重要：如果机器没有<code class="highlighter-rouge">ssh</code>秘钥，则生成秘钥文件，可以不输入直接回车自动生成</strong></p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/14.PNG" alt="" /></p>
+
+<p>安装过程中，需要输入多次<strong>master</strong>节点和<strong>node</strong>节点的密码信息，执行结束会得到如下提示</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/15.PNG" alt="" /></p>
+
+<p><strong>master</strong>节点查看节点信息，验证集群状态</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# kubectl get nodes
+NAME           STATUS    AGE
+192.168.3.44   Ready     5m
+192.168.3.48   Ready     4m
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/16.PNG" alt="" /></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# ps -ef
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/17.PNG" alt="" /></p>
+
+  </div>
+  
+</div>
+
+<div class="pagination">
+  
+    <span class="pagination-item older">Older</span>
+  
+  
+    <span class="pagination-item newer">Newer</span>
+  
+</div>
+    </div>
+
+  </body>
+</html>

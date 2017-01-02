@@ -34,13 +34,13 @@ Kubernetes部署方式分为两种，二进制方式或容器化方式
 
 下载[k8s_install_binaries](\\192.168.3.36\lan_share_robin\k8s_install_binaries.tar.gz)到**master**机器，解压安装包
 
-![](file:///./images/11.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/11.PNG)
 
 进入`cluster`目录，编辑`setup.sh`脚本文件
 
-![](https://robinle.github.io/images/12.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/12.PNG)
 
-![](file:///./images/13.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/13.PNG)
 
 需要根据具体部署的集群信息更新`setup.sh`脚本文件
 
@@ -56,11 +56,11 @@ Kubernetes部署方式分为两种，二进制方式或容器化方式
 
 **重要：如果机器没有`ssh`秘钥，则生成秘钥文件，可以不输入直接回车自动生成**
 
-![](file:///./images/14.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/14.PNG)
 
 安装过程中，需要输入多次**master**节点和**node**节点的密码信息，执行结束会得到如下提示
 
-![](file:///./images/15.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/15.PNG)
 
 
 
@@ -73,10 +73,10 @@ NAME           STATUS    AGE
 192.168.3.48   Ready     4m
 ```
 
-![](file:///./images/16.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/16.PNG)
 
 ```
 root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# ps -ef
 ```
 
-![](file:///./images/17.png)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/17.PNG)
