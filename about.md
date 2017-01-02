@@ -1,7 +1,7 @@
 ---
 layout: page
-title: About
+title: 简介
 ---
 
-# Robin Lee的个人博客
+# robin Lee的个人博客
 
