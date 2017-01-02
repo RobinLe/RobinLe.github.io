@@ -1,6 +1,8 @@
 ---
 layout: post
 title: Kubernetes容器化部署
+category: k8s
+tags: deploy
 ---
 
 
