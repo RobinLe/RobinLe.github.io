@@ -4,13 +4,192 @@
  <title>robin Lee</title>
  <link href="http://192.168.1.109:4000/atom.xml" rel="self"/>
  <link href="http://192.168.1.109:4000/"/>
- <updated>2017-01-03T00:28:51+08:00</updated>
+ <updated>2017-01-05T22:06:35+08:00</updated>
  <id>http://192.168.1.109:4000</id>
  <author>
    <name>robin Lee</name>
    <email></email>
  </author>
 
+ 
+ <entry>
+   <title>Docker日志解决方案（rsyslog+logstash）</title>
+   <link href="http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash/"/>
+   <updated>2017-01-05T00:00:00+08:00</updated>
+   <id>http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash</id>
+   <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Host&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;OS&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;IP&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Services&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;syslog服务器&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Ubuntu16.04&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.48&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;rsyslog，logstash&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;docker服务器&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Ubuntu16.04&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.45&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;nginx&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;docker服务器启动nginx容器，nginx容器日志通过syslog传到syslog服务器，syslog服务器把日志输出到logstash中。&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;syslog日志服务器配置&quot;&gt;Syslog日志服务器配置&lt;/h3&gt;
+
+&lt;p&gt;修改&lt;strong&gt;rsyslog&lt;/strong&gt;配置文件&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/rsyslog.conf&lt;/code&gt;，取消&lt;strong&gt;TCP&lt;/strong&gt;或者&lt;strong&gt;UDP&lt;/strong&gt;日志接收模块注释，下图开启&lt;strong&gt;TCP514端口&lt;/strong&gt;接收日志&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# vi /etc/rsyslog.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;创建日志转发模板文件&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/rsyslog.d/01-template-json.conf&lt;/code&gt;，使用&lt;strong&gt;json&lt;/strong&gt;格式进行日志转发&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# touch /etc/rsyslog.d/01-template-json.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;输入以下文件内容吗，定义&lt;strong&gt;syslog&lt;/strong&gt;的&lt;strong&gt;json&lt;/strong&gt;模板及各个字段，&lt;a href=&quot;http://www.rsyslog.com/doc/v8-stable/configuration/properties.html&quot;&gt;更多字段内容&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;template(name=&quot;json-template&quot;
+  type=&quot;list&quot;) {
+
+    constant(value=&quot;{&quot;)
+      constant(value=&quot;\&quot;@timestamp\&quot;:\&quot;&quot;)     property(name=&quot;timereported&quot; dateFormat=&quot;rfc3339&quot;)
+      constant(value=&quot;\&quot;,\&quot;@version\&quot;:\&quot;1&quot;)
+      constant(value=&quot;\&quot;,\&quot;message\&quot;:\&quot;&quot;)     property(name=&quot;msg&quot; format=&quot;json&quot;)
+      constant(value=&quot;\&quot;,\&quot;sysloghost\&quot;:\&quot;&quot;)  property(name=&quot;hostname&quot;)
+      constant(value=&quot;\&quot;,\&quot;severity\&quot;:\&quot;&quot;)    property(name=&quot;syslogseverity-text&quot;)
+      constant(value=&quot;\&quot;,\&quot;facility\&quot;:\&quot;&quot;)    property(name=&quot;syslogfacility-text&quot;)
+      constant(value=&quot;\&quot;,\&quot;programname\&quot;:\&quot;&quot;) property(name=&quot;programname&quot;)
+      constant(value=&quot;\&quot;,\&quot;procid\&quot;:\&quot;&quot;)      property(name=&quot;procid&quot;)
+    constant(value=&quot;\&quot;}\n&quot;)
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;创建日志转发配置文件&lt;code class=&quot;highlighter-rouge&quot;&gt;/etc/rsyslog.d/60-output.conf&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# touch /etc/rsyslog.d/60-output.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;输入以下内容，定义所有日志使用&lt;code class=&quot;highlighter-rouge&quot;&gt;json-template&lt;/code&gt;模板转发到&lt;code class=&quot;highlighter-rouge&quot;&gt;192.168.3.48:10514&lt;/code&gt;，&lt;strong&gt;2个@@表示TCP端口，1个@表示UDP端口&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# This line sends all lines to defined IP address at port 10514,
+# using the &quot;json-template&quot; format template
+
+*.*                         @@192.168.3.48:10514;json-template
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;重启&lt;strong&gt;rsyslog&lt;/strong&gt;服务&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# /etc/init.d/rsyslog restart
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;docker服务器配置syslog驱动&quot;&gt;Docker服务器配置syslog驱动&lt;/h3&gt;
+
+&lt;p&gt;为docker daemon配置syslog驱动，并设置远程syslog日志服务器地址和端口接收日志&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.45:~# dockerd start --log-driver=syslog \
+--log-opt syslog-address=tcp://192.168.3.48:514 &amp;amp;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;或者启动容器时配置syslog中心服务器记录日志（不建议使用该方式）&lt;/p&gt;
+  &lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.45:~# docker run --log-driver=syslog \
+--log-opt syslog-address=tcp://192.168.3.48:514
+&lt;/code&gt;&lt;/pre&gt;
+  &lt;/div&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;启动nginx容器，访问nginx容器&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.45:~# docker run -it --rm -p 80:80 nginx
+root@192.168.3.45:~# curl 192.168.3.45
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;查看容器，输出了nginx访问日志&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;查看&lt;strong&gt;syslog服务器&lt;/strong&gt;日志，确定接收到&lt;strong&gt;nginx容器&lt;/strong&gt;日志&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# cat /var/log/syslog
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&quot;logstash配置容器方式&quot;&gt;logstash配置（容器方式）&lt;/h3&gt;
+
+&lt;p&gt;logstash容器运行在syslog服务器上，下载logstash镜像，创建logstash配置文件&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker pull logstash
+root@192.168.3.48:~# cd ~ 
+root@192.168.3.48:~# mkdir logstash_pipeline
+root@192.168.3.48:~# vi logstash_pipeline/logstash.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;定义&lt;code class=&quot;highlighter-rouge&quot;&gt;logstash&lt;/code&gt;输入输出与过滤条件，输入从&lt;strong&gt;tcp10514&lt;/strong&gt;端口接受日志数据（也可以直接读取syslog采集，但需要对syslog文件有读权限），直接输出到标准输出，&lt;a href=&quot;https://www.elastic.co/guide/en/logstash/current/config-examples.html&quot;&gt;更多配置参考&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;input {
+  tcp {
+    port =&amp;gt; 10514
+    codec =&amp;gt; &quot;json&quot;
+    type =&amp;gt; &quot;rsyslog&quot;
+  }
+#    file { 
+#       path =&amp;gt; &quot;/logs/syslog&quot; 
+#       start_position =&amp;gt; &quot;beginning&quot;
+#    }
+# stdin { }
+}
+
+filter { }
+
+output {
+    stdout { }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;启动&lt;strong&gt;logstash&lt;/strong&gt;容器，接收&lt;strong&gt;syslog&lt;/strong&gt;日志&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker run -it --rm -p 192.168.3.48:10514:10514 -v ~/logstash_pipeline/:/logstash_pipeline logstash -f /logstash_pipeline/logstash.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;查看&lt;strong&gt;logstash&lt;/strong&gt;容器输出，成功接收到&lt;strong&gt;syslog&lt;/strong&gt;日志。数据流向&lt;code class=&quot;highlighter-rouge&quot;&gt;nginx容器--&amp;gt;syslog服务器--&amp;gt;logstash容器&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+</content>
+ </entry>
  
  <entry>
    <title>Kubernetes容器化部署</title>
