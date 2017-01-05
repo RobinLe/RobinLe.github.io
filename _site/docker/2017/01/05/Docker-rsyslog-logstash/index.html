@@ -120,7 +120,7 @@
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.png" alt="" /></p>
 
 <p>创建日志转发模板文件<code class="highlighter-rouge">/etc/rsyslog.d/01-template-json.conf</code>，使用<strong>json</strong>格式进行日志转发</p>
 
@@ -165,7 +165,7 @@
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.png" alt="" /></p>
 
 <hr />
 
@@ -192,11 +192,11 @@ root@192.168.3.45:~# curl 192.168.3.45
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.png" alt="" /></p>
 
 <p>查看容器，输出了nginx访问日志</p>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.png" alt="" /></p>
 
 <p>查看<strong>syslog服务器</strong>日志，确定接收到<strong>nginx容器</strong>日志</p>
 
@@ -204,7 +204,7 @@ root@192.168.3.45:~# curl 192.168.3.45
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.png" alt="" /></p>
 
 <hr />
 
@@ -250,7 +250,7 @@ output {
 
 <p>查看<strong>logstash</strong>容器输出，成功接收到<strong>syslog</strong>日志。数据流向<code class="highlighter-rouge">nginx容器--&gt;syslog服务器--&gt;logstash容器</code></p>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.png" alt="" /></p>
 
 
 </div>

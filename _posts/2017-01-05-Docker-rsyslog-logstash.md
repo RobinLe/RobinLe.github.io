@@ -28,7 +28,7 @@ docker服务器启动nginx容器，nginx容器日志通过syslog传到syslog服�
 root@192.168.3.48:~# vi /etc/rsyslog.conf
 ```
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.png)
 
 创建日志转发模板文件`/etc/rsyslog.d/01-template-json.conf`，使用**json**格式进行日志转发
 
@@ -73,7 +73,7 @@ root@192.168.3.48:~# touch /etc/rsyslog.d/60-output.conf
 root@192.168.3.48:~# /etc/init.d/rsyslog restart
 ```
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.png)
 
 
 
@@ -103,11 +103,11 @@ root@192.168.3.45:~# docker run -it --rm -p 80:80 nginx
 root@192.168.3.45:~# curl 192.168.3.45
 ```
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.png)
 
 查看容器，输出了nginx访问日志
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.png)
 
 查看**syslog服务器**日志，确定接收到**nginx容器**日志
 
@@ -115,7 +115,7 @@ root@192.168.3.45:~# curl 192.168.3.45
 root@192.168.3.48:~# cat /var/log/syslog
 ```
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.png)
 
 
 
@@ -165,5 +165,5 @@ root@192.168.3.48:~# docker run -it --rm -p 192.168.3.48:10514:10514 -v ~/logsta
 
 查看**logstash**容器输出，成功接收到**syslog**日志。数据流向`nginx容器-->syslog服务器-->logstash容器`
 
-![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.PNG)
+![](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.png)
 
