@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      ELK容器化部署 &middot; robin Lee
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/poole.css">
+  <link rel="stylesheet" href="/public/css/syntax.css">
+  <link rel="stylesheet" href="/public/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/public/apple-touch-icon-144-precomposed.png">
+                                 <link rel="shortcut icon" href="/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/atom.xml">
+</head>
+
+
+  <body class="layout-reverse">
+
+    <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1>
+        <a href="/">
+          robin Lee
+        </a>
+      </h1>
+      <p class="lead"></p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-nav-item" href="/">主页</a>
+
+      
+
+      
+      
+        
+          
+        
+      
+        
+          
+            <a class="sidebar-nav-item" href="/about/">简介</a>
+          
+        
+      
+        
+      
+        
+          
+        
+      
+
+      <!--<a class="sidebar-nav-item" href="/archive/v.zip">Download</a>
+      <a class="sidebar-nav-item" href="">GitHub project</a>
+      <span class="sidebar-nav-item">Currently v</span>-->
+    </nav>
+
+    <p>&copy; 2017. All rights reserved.</p>
+  </div>
+</div>
+
+
+    <div class="content container">
+      <div class="post">
+  <h1 class="post-title">ELK容器化部署</h1>
+  <span class="post-date">06 Jan 2017</span>
+  <h3 id="测试环境">测试环境</h3>
+
+<p>在一台安装有<strong>docker v1.12.5</strong>版本的主机上，测试ELK容器化运行，所需镜像及版本如下：</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: center">Host</th>
+      <th style="text-align: center">OS</th>
+      <th style="text-align: center">Dependence</th>
+      <th style="text-align: center">Images</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">192.168.3.48</td>
+      <td style="text-align: center">Ubuntu16.04</td>
+      <td style="text-align: center">Docker v1.12.5</td>
+      <td style="text-align: center">logstash:5.1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">192.168.3.48</td>
+      <td style="text-align: center">Ubuntu16.04</td>
+      <td style="text-align: center">Docker v1.12.5</td>
+      <td style="text-align: center">elasticsearch:5.1</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">192.168.3.48</td>
+      <td style="text-align: center">Ubuntu16.04</td>
+      <td style="text-align: center">Docker v1.12.5</td>
+      <td style="text-align: center">kibana:5.1</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="启动elasticsearch容器">启动elasticsearch容器</h3>
+
+<p>下载<strong>elasticsearch</strong>镜像</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker pull elasticsearch:5.1
+</code></pre>
+</div>
+
+<p>启动<strong>elasticsearch</strong>容器，并开放<strong>9200</strong>端口</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker run -it --rm -p 9200:9200 --name elasticsearch elasticsearch
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/24.png" alt="" /></p>
+
+<h3 id="启动logstash容器">启动logstash容器</h3>
+
+<p>创建<strong>logstash</strong>配置文件，读取<code class="highlighter-rouge">/opt/logs</code>目录下的<strong>testlog</strong>文件，输出到<strong>elasticsearch</strong>和标准输出</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# mkdir -p /opt/configdir
+root@192.168.3.48:~# vi /opt/configdir/logstash.conf
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>input {
+  file {
+    path =&gt; "/opt/logs/testlog"
+    start_position =&gt; "beginning"
+  }
+#stdin {}
+}
+
+filter { }
+
+output {
+  elasticsearch {
+    hosts =&gt; ["192.168.3.48:9200"]
+  }
+  stdout { codec =&gt; rubydebug }
+}
+</code></pre>
+</div>
+
+<p>创建测试日志文件（示例为syslog格式的web日志），修改文件权限使<strong>logstash</strong>可读</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# mkdir -p /opt/logs
+root@192.168.3.48:~# touch /opt/logs/testlog
+root@192.168.3.48:~# chmod 755 /opt/logs/testlog
+root@192.168.3.48:~# vi /opt/logs/testlog
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>199.72.81.55 - - [01/Jul/1995:00:00:01 -0400] "GET /history/apollo/ HTTP/1.0" 200 6245
+unicomp6.unicomp.net - - [01/Jul/1995:00:00:06 -0400] "GET /shuttle/countdown/ HTTP/1.0" 200 3985
+199.120.110.21 - - [01/Jul/1995:00:00:09 -0400] "GET /shuttle/missions/sts-73/mission-sts-73.html HTTP/1.0" 200 4085
+</code></pre>
+</div>
+
+<p>启动容器，挂载本地配置文件目录和日志文件目录。成功会自动读取日志文件并转发到标准输出和<strong>elasticsearch</strong>中，如下</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker run -it --rm -v /opt/configdir/:/configdir logstash -f /configdir/logstash.conf
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/25.png" alt="" /></p>
+
+<h3 id="启动kibana容器">启动kibana容器</h3>
+
+<p><strong>logstash</strong>集中对日志进行收集过滤，<strong>elasticsearch</strong>提供日志存储与索引，<strong>kibana</strong>对elasticsearch中的数据进行可视化。</p>
+
+<p>启动<strong>kibana</strong>容器，设置<strong>elasticsearch</strong>地址，开放<strong>5601</strong>端口</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker run -it --rm -p 5601:5601 --name kibana -e ELASTICSEARCH_URL=http://192.168.3.48:9200 kibana
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/26.png" alt="" /></p>
+
+</div>
+
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/docker/2017/01/05/Docker-rsyslog-logstash/">
+            Docker日志解决方案（rsyslog+logstash）
+            <small>05 Jan 2017</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/">
+            Kubernetes容器化部署
+            <small>29 Dec 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/">
+            Kubernetes二进制部署
+            <small>29 Dec 2016</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+    </div>
+
+  </body>
+</html>

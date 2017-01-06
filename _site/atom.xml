@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>robin Lee</title>
- <link href="https://robinle.github.io/atom.xml" rel="self"/>
- <link href="https://robinle.github.io/"/>
- <updated>2017-01-05T22:17:41+08:00</updated>
- <id>https://robinle.github.io</id>
+ <link href="http://192.168.1.109:4000/atom.xml" rel="self"/>
+ <link href="http://192.168.1.109:4000/"/>
+ <updated>2017-01-06T20:21:37+08:00</updated>
+ <id>http://192.168.1.109:4000</id>
  <author>
    <name>robin Lee</name>
    <email></email>
@@ -13,10 +13,131 @@
 
  
  <entry>
+   <title>ELK容器化部署</title>
+   <link href="http://192.168.1.109:4000/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <updated>2017-01-06T00:00:00+08:00</updated>
+   <id>http://192.168.1.109:4000/docker/2017/01/06/ELK容器化部署</id>
+   <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
+
+&lt;p&gt;在一台安装有&lt;strong&gt;docker v1.12.5&lt;/strong&gt;版本的主机上，测试ELK容器化运行，所需镜像及版本如下：&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Host&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;OS&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Dependence&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Images&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.48&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Ubuntu16.04&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Docker v1.12.5&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;logstash:5.1&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.48&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Ubuntu16.04&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Docker v1.12.5&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;elasticsearch:5.1&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.48&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Ubuntu16.04&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Docker v1.12.5&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kibana:5.1&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&quot;启动elasticsearch容器&quot;&gt;启动elasticsearch容器&lt;/h3&gt;
+
+&lt;p&gt;下载&lt;strong&gt;elasticsearch&lt;/strong&gt;镜像&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker pull elasticsearch:5.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;启动&lt;strong&gt;elasticsearch&lt;/strong&gt;容器，并开放&lt;strong&gt;9200&lt;/strong&gt;端口&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker run -it --rm -p 9200:9200 --name elasticsearch elasticsearch
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/24.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;启动logstash容器&quot;&gt;启动logstash容器&lt;/h3&gt;
+
+&lt;p&gt;创建&lt;strong&gt;logstash&lt;/strong&gt;配置文件，读取&lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/logs&lt;/code&gt;目录下的&lt;strong&gt;testlog&lt;/strong&gt;文件，输出到&lt;strong&gt;elasticsearch&lt;/strong&gt;和标准输出&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# mkdir -p /opt/configdir
+root@192.168.3.48:~# vi /opt/configdir/logstash.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;input {
+  file {
+    path =&amp;gt; &quot;/opt/logs/testlog&quot;
+    start_position =&amp;gt; &quot;beginning&quot;
+  }
+#stdin {}
+}
+
+filter { }
+
+output {
+  elasticsearch {
+    hosts =&amp;gt; [&quot;192.168.3.48:9200&quot;]
+  }
+  stdout { codec =&amp;gt; rubydebug }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;创建测试日志文件（示例为syslog格式的web日志），修改文件权限使&lt;strong&gt;logstash&lt;/strong&gt;可读&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# mkdir -p /opt/logs
+root@192.168.3.48:~# touch /opt/logs/testlog
+root@192.168.3.48:~# chmod 755 /opt/logs/testlog
+root@192.168.3.48:~# vi /opt/logs/testlog
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;199.72.81.55 - - [01/Jul/1995:00:00:01 -0400] &quot;GET /history/apollo/ HTTP/1.0&quot; 200 6245
+unicomp6.unicomp.net - - [01/Jul/1995:00:00:06 -0400] &quot;GET /shuttle/countdown/ HTTP/1.0&quot; 200 3985
+199.120.110.21 - - [01/Jul/1995:00:00:09 -0400] &quot;GET /shuttle/missions/sts-73/mission-sts-73.html HTTP/1.0&quot; 200 4085
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;启动容器，挂载本地配置文件目录和日志文件目录。成功会自动读取日志文件并转发到标准输出和&lt;strong&gt;elasticsearch&lt;/strong&gt;中，如下&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker run -it --rm -v /opt/configdir/:/configdir logstash -f /configdir/logstash.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/25.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;启动kibana容器&quot;&gt;启动kibana容器&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;logstash&lt;/strong&gt;集中对日志进行收集过滤，&lt;strong&gt;elasticsearch&lt;/strong&gt;提供日志存储与索引，&lt;strong&gt;kibana&lt;/strong&gt;对elasticsearch中的数据进行可视化。&lt;/p&gt;
+
+&lt;p&gt;启动&lt;strong&gt;kibana&lt;/strong&gt;容器，设置&lt;strong&gt;elasticsearch&lt;/strong&gt;地址，开放&lt;strong&gt;5601&lt;/strong&gt;端口&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;root@192.168.3.48:~# docker run -it --rm -p 5601:5601 --name kibana -e ELASTICSEARCH_URL=http://192.168.3.48:9200 kibana
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/26.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
    <title>Docker日志解决方案（rsyslog+logstash）</title>
-   <link href="https://robinle.github.io/docker/2017/01/05/Docker-rsyslog-logstash/"/>
+   <link href="http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash/"/>
    <updated>2017-01-05T00:00:00+08:00</updated>
-   <id>https://robinle.github.io/docker/2017/01/05/Docker-rsyslog-logstash</id>
+   <id>http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash</id>
    <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
 
 &lt;table&gt;
@@ -193,9 +314,9 @@ output {
  
  <entry>
    <title>Kubernetes容器化部署</title>
-   <link href="https://robinle.github.io/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <link href="http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>https://robinle.github.io/k8s/2016/12/29/Kubernetes容器化部署</id>
+   <id>http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes容器化部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
@@ -293,9 +414,9 @@ root@k8s-master:/home/ubuntu/k8s_install_images#
  
  <entry>
    <title>Kubernetes二进制部署</title>
-   <link href="https://robinle.github.io/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
+   <link href="http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>https://robinle.github.io/k8s/2016/12/29/Kubernetes二进制部署</id>
+   <id>http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes二进制部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
