@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>robin Lee</title>
- <link href="http://192.168.1.109:4000/atom.xml" rel="self"/>
- <link href="http://192.168.1.109:4000/"/>
- <updated>2017-01-06T20:21:37+08:00</updated>
- <id>http://192.168.1.109:4000</id>
+ <link href="http://192.168.0.110:4000/atom.xml" rel="self"/>
+ <link href="http://192.168.0.110:4000/"/>
+ <updated>2017-01-15T21:04:39+08:00</updated>
+ <id>http://192.168.0.110:4000</id>
  <author>
    <name>robin Lee</name>
    <email></email>
@@ -13,10 +13,241 @@
 
  
  <entry>
+   <title>容器部署kubernetes</title>
+   <link href="http://192.168.0.110:4000/k8s/2017/01/14/%E5%AE%B9%E5%99%A8%E9%83%A8%E7%BD%B2kubernetes/"/>
+   <updated>2017-01-14T00:00:00+08:00</updated>
+   <id>http://192.168.0.110:4000/k8s/2017/01/14/容器部署kubernetes</id>
+   <content type="html">&lt;p&gt;本文介绍在使用容器方式部署kubernetes，在centos7主机上，基于docker v1.12.5部署kubernetes v1.5.0。仅部署kubernetes必要组件，各个组件均封装成容器部署运行。&lt;/p&gt;
+
+&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;HOST&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;OS&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Dependence&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Role&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.100&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;CentOS7&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Docker v1.12.5&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;master&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;192.168.3.101&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;CentOS7&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;Docker v1.12.5&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;node&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&quot;kubernetes必要组件&quot;&gt;Kubernetes必要组件&lt;/h3&gt;
+
+&lt;h4 id=&quot;master&quot;&gt;master&lt;/h4&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Component&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Version&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Format&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;etcd&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v0.3.15&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;container&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kube-apiserver&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v1.5.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;container&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kube-controller-manager&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v1.5.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;container&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kube-schduler&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v1.5.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;container&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h4 id=&quot;node&quot;&gt;node&lt;/h4&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Component&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Version&lt;/th&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;Format&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kubelet&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v1.5.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;binary&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;kube-proxy&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;v1.5.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;container&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h4 id=&quot;etcd容器获取及启动&quot;&gt;etcd容器获取及启动&lt;/h4&gt;
+
+&lt;p&gt;获取官方官方镜像&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master ~]# docker pull quay.io/coreos/etcd:v3.0.15
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;从&lt;strong&gt;Docerfile&lt;/strong&gt;构建&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# description:     etcd v0.3.15-linux-amd64&lt;/span&gt;
+FROM alpine:3.4
+
+ADD etcd /usr/local/bin/
+ADD etcdctl /usr/local/bin/
+RUN mkdir -p /var/etcd/
+RUN mkdir -p /var/lib/etcd/
+
+EXPOSE 2379 2380
+
+&lt;span class=&quot;c&quot;&gt;# Define default command.&lt;/span&gt;
+CMD &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/usr/local/bin/etcd&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;启动&lt;strong&gt;etcd&lt;/strong&gt;容器，监听2379，2380，4001端口&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master ~]# docker run -p 4001:4001 -p 2380:2380 -p 2379:2379 --name k8s-etcd k8s/etcd:v3.0.15 etcd\
+ -name etcd0 \
+ -advertise-client-urls http://192.168.3.100:2379,http://192.168.3.100:4001 \
+ -listen-client-urls http://0.0.0.0:2379,http://0.0.0.0:4001 \
+ -initial-advertise-peer-urls http://192.168.3.100:2380 \
+ -listen-peer-urls http://0.0.0.0:2380 \
+ -initial-cluster-token etcd-cluster-1 \
+ -initial-cluster etcd0=http://192.168.3.100:2380 \
+ -initial-cluster-state new
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/28.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;k8s组件容器获取及启动&quot;&gt;k8s组件容器获取及启动&lt;/h4&gt;
+
+&lt;p&gt;下载官方编译后的二进制文件包(https://storage.googleapis.com/kubernetes-release/release/v1.5.0/kubernetes-server-linux-amd64.tar.gz)，解压后在&lt;code class=&quot;highlighter-rouge&quot;&gt;kubernetes/server/bin&lt;/code&gt;目录下拥有各个组件二进制文件和镜像包&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master bin]# pwd
+/root/kubernetes/server/bin
+[root@k8s-master bin]# ll -h
+total 1.3G
+-rwxr-x---. 1 root root 145M Dec 13 07:45 hyperkube
+-rwxr-x---. 1 root root  91M Dec 13 07:45 kubeadm
+-rwxr-x---. 1 root root 118M Dec 13 07:45 kube-apiserver
+-rw-r-----. 1 root root   33 Dec 13 07:45 kube-apiserver.docker_tag
+-rw-r-----. 1 root root 119M Dec 13 07:45 kube-apiserver.tar
+-rwxr-x---. 1 root root  97M Dec 13 07:45 kube-controller-manager
+-rw-r-----. 1 root root   33 Dec 13 07:45 kube-controller-manager.docker_tag
+-rw-r-----. 1 root root  98M Dec 13 07:45 kube-controller-manager.tar
+-rwxr-x---. 1 root root  49M Dec 13 07:46 kubectl
+-rwxr-x---. 1 root root 6.6M Dec 13 07:45 kube-discovery
+-rwxr-x---. 1 root root  44M Dec 13 07:45 kube-dns
+-rwxr-x---. 1 root root  46M Dec 13 07:46 kubefed
+-rwxr-x---. 1 root root 103M Dec 13 07:45 kubelet
+-rwxr-x---. 1 root root  44M Dec 13 07:45 kube-proxy
+-rw-r-----. 1 root root   33 Dec 13 07:46 kube-proxy.docker_tag
+-rw-r-----. 1 root root 174M Dec 13 07:46 kube-proxy.tar
+-rwxr-x---. 1 root root  51M Dec 13 07:45 kube-scheduler
+-rw-r-----. 1 root root   33 Dec 13 07:46 kube-scheduler.docker_tag
+-rw-r-----. 1 root root  52M Dec 13 07:46 kube-scheduler.tar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/27.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;直接&lt;code class=&quot;highlighter-rouge&quot;&gt;docker load&lt;/code&gt;镜像&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master bin]# docker load -i kube-apiserver.tar
+[root@k8s-master bin]# docker load -i kube-controller-manager.tar
+[root@k8s-master bin]# docker load -i kube-scheduler.tar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;或者使用&lt;strong&gt;Dockerfile&lt;/strong&gt;构建镜像&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# description:      kube-apiserver, kubernetes-1.5.0
+FROM busybox:1.25
+ADD kube-apiserver /usr/local/bin/
+
+---
+# description:      kube-controller-manager, kubernetes-1.5.0
+FROM busybox:1.25
+ADD kube-controller-manager /usr/local/bin/
+
+---
+# description:      kube-scheduler, kubernetes-1.5.0
+FROM busybox:1.25
+ADD kube-scheduler /usr/local/bin/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/30.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;kube-apiserver启动&quot;&gt;kube-apiserver启动&lt;/h4&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master ~]# docker run -p 8080:8080 --name k8s-apiserver k8s/kube-apiserver:v1.5.0 kube-apiserver \
+ --insecure-bind-address=0.0.0.0 \
+ --insecure-port=8080 \
+ --etcd-servers=http://172.17.0.2:2379 \
+ --logtostderr=true \
+ --service-cluster-ip-range=10.10.3.0/24 \
+ --advertise-address=192.168.3.100
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/29.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;kube-controller-manager启动&quot;&gt;kube-controller-manager启动&lt;/h4&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master ~]# docker run --name k8s-controller k8s/kube-controller-manager:v1.5.0 kube-controller-manager \
+ --logtostderr=true \
+ --master=172.17.0.3:8080
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/31.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;kube-schduler启动&quot;&gt;kube-schduler启动&lt;/h4&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[root@k8s-master ~]# docker run --name k8s-scheduler k8s/kube-scheduler:v1.5.0 kube-scheduler \
+ --logtostderr=true \
+ --master=172.17.0.3:8080
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/32.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
    <title>ELK容器化部署</title>
-   <link href="http://192.168.1.109:4000/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <link href="http://192.168.0.110:4000/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
    <updated>2017-01-06T00:00:00+08:00</updated>
-   <id>http://192.168.1.109:4000/docker/2017/01/06/ELK容器化部署</id>
+   <id>http://192.168.0.110:4000/docker/2017/01/06/ELK容器化部署</id>
    <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
 
 &lt;p&gt;在一台安装有&lt;strong&gt;docker v1.12.5&lt;/strong&gt;版本的主机上，测试ELK容器化运行，所需镜像及版本如下：&lt;/p&gt;
@@ -135,9 +366,9 @@ unicomp6.unicomp.net - - [01/Jul/1995:00:00:06 -0400] &quot;GET /shuttle/countdo
  
  <entry>
    <title>Docker日志解决方案（rsyslog+logstash）</title>
-   <link href="http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash/"/>
+   <link href="http://192.168.0.110:4000/docker/2017/01/05/Docker-rsyslog-logstash/"/>
    <updated>2017-01-05T00:00:00+08:00</updated>
-   <id>http://192.168.1.109:4000/docker/2017/01/05/Docker-rsyslog-logstash</id>
+   <id>http://192.168.0.110:4000/docker/2017/01/05/Docker-rsyslog-logstash</id>
    <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
 
 &lt;table&gt;
@@ -314,9 +545,9 @@ output {
  
  <entry>
    <title>Kubernetes容器化部署</title>
-   <link href="http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <link href="http://192.168.0.110:4000/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes容器化部署</id>
+   <id>http://192.168.0.110:4000/k8s/2016/12/29/Kubernetes容器化部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
@@ -414,9 +645,9 @@ root@k8s-master:/home/ubuntu/k8s_install_images#
  
  <entry>
    <title>Kubernetes二进制部署</title>
-   <link href="http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
+   <link href="http://192.168.0.110:4000/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>http://192.168.1.109:4000/k8s/2016/12/29/Kubernetes二进制部署</id>
+   <id>http://192.168.0.110:4000/k8s/2016/12/29/Kubernetes二进制部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
