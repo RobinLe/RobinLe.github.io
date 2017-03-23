@@ -21,7 +21,7 @@ author:
 #  url:            https://twitter.com/mdo
 
 gems: [jekyll-paginate]
-paginate:         5
+paginate:         1
 
 # Custom vars
 #version:          2.1.0
