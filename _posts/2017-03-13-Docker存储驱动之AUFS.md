@@ -6,10 +6,11 @@ tags: storage
 ---
 
 
-Docker存储驱动之AUFS，关于Docker的Image（镜像）与Container（容器）的存储以及存储驱动之AUFS  
+Docker存储驱动之AUFS，关于Docker的Image（镜像）与Container（容器）的存储以及存储驱动之AUFS
+
+<br/>
 
 #### Docker存储驱动简介
-
 Docker内置多种存储驱动，每种存储驱动都是基于Linux文件系统（Linux FS）或者卷管理（Volume Manager）技术。一般来说，Docker存储驱动的名称与文件系统（存储技术）同名，见下表对应关系
 
 |    文件系统/存储    |      存储驱动名称      |
@@ -21,10 +22,9 @@ Docker内置多种存储驱动，每种存储驱动都是基于Linux文件系统
 |      VFS      |       vfs        |
 |      ZFS      |       zfs        |
 
-  
+<br/>
 
 #### AUFS简介
-
 AUFS，起初名为`AnotherUnionFileSystem`，是一种UnionFS，V2版本后更名为`advanced multi-layered unification fileystem`即高级多层统一文件系统。
 
 AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的，目的也是为了提高其可靠性和性能，也在AUFS上实现了一些新的概念比如写分支平衡等（writeable branch balancing）。
@@ -33,8 +33,9 @@ AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的�
 
 *Tips：虽然AUFS没有进入Liunx内核，但是AUFS默认是写入Ubuntu内核的，Docker早期仅支持Ubuntu便是这个原因*  
 
-#### AUFS核心概念
+<br/>
 
+#### AUFS核心概念
 将多个目录合并成一个虚拟文件系统，成员目录称为虚拟文件系统的一个分支（**branch**）。
 
 例如，把`/tmp`，`/var`，`/opt`三个目录联合挂着到`/aufs`目录下，则`/aufs`目录可见`/tmp`，`/var`，`/opt`目录下的所有文件。而每个成员目录，则称为虚拟文件系统的一个**branch**。
@@ -49,13 +50,14 @@ AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的�
 
 *Tips：mount -t aufs -o br=/tmp:/var:/opt none /aufs*
 
-*该指令联合挂载`/tmp`，`/var`，`/opt`至挂载点`/aufs`，按照从左到右的顺序`/tmp`位于顶层branch，而`/opt`位于最底层branch，所有的branch按照顺序共同构成`/aufs`栈*  
+*该指令联合挂载`/tmp`，`/var`，`/opt`至挂载点`/aufs`，按照从左到右的顺序`/tmp`位于顶层branch，而`/opt`位于最底层branch，所有的branch按照顺序共同构成`/aufs`栈*
 
-AUFS每层branch可以动态的增加删除，每增加一层，下层默认置为**ro**，最上一层为**rw**。删除branch是在aufs挂载点移除，并未删除挂载目录。  
+AUFS每层branch可以动态的增加删除，每增加一层，下层默认置为**ro**，最上一层为**rw**。删除branch是在aufs挂载点移除，并未删除挂载目录。
+
+<br/>
 
 #### Docker中的AUFS
-
-AUFS是Docker使用的第一个存储驱动，长时间以来，一直很稳定。虽然目前Docker支持多种存储驱动，而在Ubuntu中默认使用aufs存储驱动，可以使用docker info指令进行查看。对于Docker而言，AUFS有很多优秀的特点，比如**快速启动容器**，**高效存储利用率**，**高效内存利用率**等。  
+AUFS是Docker使用的第一个存储驱动，长时间以来，一直很稳定。虽然目前Docker支持多种存储驱动，而在Ubuntu中默认使用aufs存储驱动，可以使用docker info指令进行查看。对于Docker而言，AUFS有很多优秀的特点，比如**快速启动容器**，**高效存储利用率**，**高效内存利用率**等。
 
 **Docker镜像和AUFS branch对应关系**
 
@@ -69,7 +71,9 @@ Docker镜像（image）是由一个或多个AUFS branch组成，并且所有的b
 
 ![img](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031307.png)
 
-如上图中基于同一个image运行两个容器，低层image一致，每启动一个新容器，便会新建一个目录作为aufs branch并与image branch进行联合挂载。  
+如上图中基于同一个image运行两个容器，低层image一致，每启动一个新容器，便会新建一个目录作为aufs branch并与image branch进行联合挂载。
+
+<br/>
 
 **容器文件读写与删除**
 
@@ -83,7 +87,9 @@ Docker镜像（image）是由一个或多个AUFS branch组成，并且所有的b
 
 下图所示，当需要删除**file1**时，由于**file1**是镜像层文件，容器层会创建一个`.wh`前置的隐藏文件，从而实现对**file1**的隐藏，实际并未删除**file1**，从而保证镜像层数据的完整性和复用性。
 
-![img](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031309.png)  
+![img](https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031309.png)
+
+<br/>
 
 **Docker本地存储目录**
 
@@ -91,10 +97,11 @@ Docker镜像存在在`/var/lib/docker/aufs/diff/`目录下。`/var/lib/docker/au
 
 Docker容器挂载点位于`/var/lib/docker/aufs/mnt/<container-id>`目录下，该目录即为AUFS联合挂载点。
 
-*Tips：早期镜像的每一层数据存储在`/var/lib/docker/aufs/diff/`目录下，镜像ID与目录名同名，从docker v1.10版本之后镜像ID不再与`/var/lib/docker/aufs/diff/`目录下的目录同名，而是采用一个安全的hash值作为镜像存储文件夹名称。*  
+*Tips：早期镜像的每一层数据存储在`/var/lib/docker/aufs/diff/`目录下，镜像ID与目录名同名，从docker v1.10版本之后镜像ID不再与`/var/lib/docker/aufs/diff/`目录下的目录同名，而是采用一个安全的hash值作为镜像存储文件夹名称。*
+
+<br/>
 
 #### 总结
-
 采用 aufs作为 docker 的容器存储驱动，使用AUFS技术，能够提供如下好处
 
 **节省存储空间**：多个容器可以共享 基础镜像（base image）存储
@@ -103,10 +110,11 @@ Docker容器挂载点位于`/var/lib/docker/aufs/mnt/<container-id>`目录下，
 
 **内存更省：**因为多个容器共享base image，以及OS的disk缓存机制，多个容器中的进程命中缓存内容的几率大大增加
 
-**允许在不更改基础镜像的同时修改其目录中的文件：**所有写操作都发生在最上层的writeable层中，这样可以大大增加base image能共享的文件内容。  
+**允许在不更改基础镜像的同时修改其目录中的文件：**所有写操作都发生在最上层的writeable层中，这样可以大大增加base image能共享的文件内容。
+
+<br/>
 
 #### 参考文献
-
 1. [https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information](https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information)  
 2. http://aufs.sourceforge.net/  
 3. [https://en.wikipedia.org/wiki/Aufs ](https://en.wikipedia.org/wiki/Aufs)  

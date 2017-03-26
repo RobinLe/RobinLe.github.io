@@ -80,6 +80,20 @@
       
         
           
+            <a class="sidebar-nav-item" href="/niceblogs/">好的博客</a>
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
         
       
         
@@ -114,152 +128,27 @@
   
   <div class="post">
     <h1 class="post-title">
-      <a href="/docker/2017/03/13/Docker%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8%E4%B9%8BAUFS/">
-        Docker存储驱动AUFS
+      <a href="/k8s/2017/03/25/Kubernetes%E8%AE%A4%E8%AF%81%E4%B8%8E%E6%8E%88%E6%9D%83-%E4%B8%80/">
+        Kubernetes认证与授权（一）
       </a>
     </h1>
 
-    <span class="post-date">13 Mar 2017</span>
+    <span class="post-date">25 Mar 2017</span>
 
-    <p>Docker存储驱动之AUFS，关于Docker的Image（镜像）与Container（容器）的存储以及存储驱动之AUFS</p>
+    <p>普通用户和Service accounts</p>
 
-<h4 id="docker存储驱动简介">Docker存储驱动简介</h4>
+<p>client certificates</p>
 
-<p>Docker内置多种存储驱动，每种存储驱动都是基于Linux文件系统（Linux FS）或者卷管理（Volume Manager）技术。一般来说，Docker存储驱动的名称与文件系统（存储技术）同名，见下表对应关系</p>
+<p>bearer tokens</p>
 
-<table>
-  <thead>
-    <tr>
-      <th style="text-align: center">文件系统/存储</th>
-      <th style="text-align: center">存储驱动名称</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align: center">OverlayFS</td>
-      <td style="text-align: center">overlay/overlay2</td>
-    </tr>
-    <tr>
-      <td style="text-align: center">AUFS</td>
-      <td style="text-align: center">aufs</td>
-    </tr>
-    <tr>
-      <td style="text-align: center">Btrfs</td>
-      <td style="text-align: center">btrfs</td>
-    </tr>
-    <tr>
-      <td style="text-align: center">Device Mapper</td>
-      <td style="text-align: center">devicemapper</td>
-    </tr>
-    <tr>
-      <td style="text-align: center">VFS</td>
-      <td style="text-align: center">vfs</td>
-    </tr>
-    <tr>
-      <td style="text-align: center">ZFS</td>
-      <td style="text-align: center">zfs</td>
-    </tr>
-  </tbody>
-</table>
+<p>an authenticating proxy</p>
 
-<h4 id="aufs简介">AUFS简介</h4>
-
-<p>AUFS，起初名为<code class="highlighter-rouge">AnotherUnionFileSystem</code>，是一种UnionFS，V2版本后更名为<code class="highlighter-rouge">advanced multi-layered unification fileystem</code>即高级多层统一文件系统。</p>
-
-<p>AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的，目的也是为了提高其可靠性和性能，也在AUFS上实现了一些新的概念比如写分支平衡等（writeable branch balancing）。</p>
-
-<blockquote>
-  <p>纯二郎先生曾多次提交aufs到linux主干，但一直被拒绝，可纯二郎依旧日以继夜的修改代码，并不断提交，可一直没有被merge，而纯二郎最终也放弃提交代码到linux主干，从而aufs也一直没有进入linux内核。关于为何linux不要aufs，主要是aufs代码太糟糕，“dense，unreadable，and uncommented”，乱，可读性差，没注释…。</p>
-</blockquote>
-
-<p><em>Tips：虽然AUFS没有进入Liunx内核，但是AUFS默认是写入Ubuntu内核的，Docker早期仅支持Ubuntu便是这个原因</em></p>
-
-<h4 id="aufs核心概念">AUFS核心概念</h4>
-
-<p>将多个目录合并成一个虚拟文件系统，成员目录称为虚拟文件系统的一个分支（<strong>branch</strong>）。</p>
-
-<p>例如，把<code class="highlighter-rouge">/tmp</code>，<code class="highlighter-rouge">/var</code>，<code class="highlighter-rouge">/opt</code>三个目录联合挂着到<code class="highlighter-rouge">/aufs</code>目录下，则<code class="highlighter-rouge">/aufs</code>目录可见<code class="highlighter-rouge">/tmp</code>，<code class="highlighter-rouge">/var</code>，<code class="highlighter-rouge">/opt</code>目录下的所有文件。而每个成员目录，则称为虚拟文件系统的一个<strong>branch</strong>。</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031301.png" alt="img" /></p>
-
-<p>每个branch可以指定<code class="highlighter-rouge">readwrite/whiteout-able/readonly</code>权限，<strong>只读（ro），读写（rw），写隐藏（wo）</strong>。一般情况下，aufs只有最上层的branch具有读写权限，其余branch均为只读权限。只读branch只能逻辑上修改。</p>
-
-<p>例如，把<code class="highlighter-rouge">/tmp</code>目录和<code class="highlighter-rouge">/var</code>目录联合挂载到<code class="highlighter-rouge">/aufs</code>目录下，<code class="highlighter-rouge">/var</code>目录挂载为顶层branch具有<strong>rw</strong>权限，而<code class="highlighter-rouge">/tmp</code>目录挂载为下层branch，具有<strong>ro</strong>权限。如果把<code class="highlighter-rouge">/tmp</code>目录<code class="highlighter-rouge">/var</code>目录<code class="highlighter-rouge">/opt</code>目录联合挂载到<code class="highlighter-rouge">/aufs</code>目录下，只有最顶层<code class="highlighter-rouge">/opt</code> branch具有<strong>rw</strong>权限，下层branch均为<strong>ro</strong>权限</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031306.png" alt="img" /></p>
-
-<p><em>Tips：mount -t aufs -o br=/tmp:/var:/opt none /aufs</em></p>
-
-<p><em>该指令联合挂载<code class="highlighter-rouge">/tmp</code>，<code class="highlighter-rouge">/var</code>，<code class="highlighter-rouge">/opt</code>至挂载点<code class="highlighter-rouge">/aufs</code>，按照从左到右的顺序<code class="highlighter-rouge">/tmp</code>位于顶层branch，而<code class="highlighter-rouge">/opt</code>位于最底层branch，所有的branch按照顺序共同构成<code class="highlighter-rouge">/aufs</code>栈</em></p>
-
-<p>AUFS每层branch可以动态的增加删除，每增加一层，下层默认置为<strong>ro</strong>，最上一层为<strong>rw</strong>。删除branch是在aufs挂载点移除，并未删除挂载目录。</p>
-
-<h4 id="docker中的aufs">Docker中的AUFS</h4>
-
-<p>AUFS是Docker使用的第一个存储驱动，长时间以来，一直很稳定。虽然目前Docker支持多种存储驱动，而在Ubuntu中默认使用aufs存储驱动，可以使用docker info指令进行查看。对于Docker而言，AUFS有很多优秀的特点，比如<strong>快速启动容器</strong>，<strong>高效存储利用率</strong>，<strong>高效内存利用率</strong>等。</p>
-
-<p><strong>Docker镜像和AUFS branch对应关系</strong></p>
-
-<p>Docker镜像（image）是由一个或多个AUFS branch组成，并且所有的branch均为只读权限。简单来说，AUFS所有<strong>ro</strong> branch按照一定顺序堆积构成docker image镜像。</p>
-
-<p>在运行容器的时候，创建一个AUFS branch位于image层之上，具有<strong>rw</strong>权限，并把这些branch联合挂载到一个挂载点下。这就是Docker能够一个镜像运行多个容器的原理所在。</p>
-
-<p>例如，image有3个目录位于<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>文件夹内，当基于该image创建容器时，创建一个容器运行目录，同样位于<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下，并使用aufs联合挂载image目录和container目录到<code class="highlighter-rouge">/var/lib/docker/aufs/mnt/</code>目录下。</p>
-
-<p>每一个目录在aufs内都是一层branch，只有顶层容器branch可读写，下层image branch均只读。创建多个容器时，只需创建多个容器运行目录，使用aufs把容器运行目录挂载在image目录之上，即实现一个image运行多个container。</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031307.png" alt="img" /></p>
-
-<p>如上图中基于同一个image运行两个容器，低层image一致，每启动一个新容器，便会新建一个目录作为aufs branch并与image branch进行联合挂载。</p>
-
-<p><strong>容器文件读写与删除</strong></p>
-
-<p>当容器需要修改一个文件，而该文件位于低层branch时，顶层branch会直接复制低层branch的文件至顶层再进行修改，而低层的文件不变，这种方式即是<strong>CoW</strong>技术（写复制），AUFS默认支持<strong>Cow</strong>技术。</p>
-
-<p>当容器删除一个低层branch文件时，只是在顶层branch对该文件进行重命名并隐藏，实际并未删除文件，只是不可见，这种方式即AUFS的<strong>whiteout</strong>（写隐藏）。</p>
-
-<p>下图所示，容器层所见<strong>file1</strong>文件为镜像层文件，当需要修改<strong>file1</strong>时，会从镜像层把文件复制到容器层，然后进行修改，从而保证镜像层数据的完整性和复用性。</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031308.png" alt="img" /></p>
-
-<p>下图所示，当需要删除<strong>file1</strong>时，由于<strong>file1</strong>是镜像层文件，容器层会创建一个<code class="highlighter-rouge">.wh</code>前置的隐藏文件，从而实现对<strong>file1</strong>的隐藏，实际并未删除<strong>file1</strong>，从而保证镜像层数据的完整性和复用性。</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031309.png" alt="img" /></p>
-
-<p><strong>Docker本地存储目录</strong></p>
-
-<p>Docker镜像存在在<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下。<code class="highlighter-rouge">/var/lib/docker/aufs/layers/</code>目录存储image的元信息，主要是image的每一层layer组织顺序（AUFS branch堆积顺序）。</p>
-
-<p>Docker容器挂载点位于<code class="highlighter-rouge">/var/lib/docker/aufs/mnt/&lt;container-id&gt;</code>目录下，该目录即为AUFS联合挂载点。</p>
-
-<p><em>Tips：早期镜像的每一层数据存储在<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下，镜像ID与目录名同名，从docker v1.10版本之后镜像ID不再与<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下的目录同名，而是采用一个安全的hash值作为镜像存储文件夹名称。</em></p>
-
-<h4 id="总结">总结</h4>
-
-<p>采用 aufs作为 docker 的容器存储驱动，使用AUFS技术，能够提供如下好处</p>
-
-<p><strong>节省存储空间</strong>：多个容器可以共享 基础镜像（base image）存储</p>
-
-<p><strong>快速部署：</strong>如果要部署多个容器，基础镜像（base image）可以避免多次拷贝</p>
-
-<p><strong>内存更省：</strong>因为多个容器共享base image，以及OS的disk缓存机制，多个容器中的进程命中缓存内容的几率大大增加</p>
-
-<p><strong>允许在不更改基础镜像的同时修改其目录中的文件：</strong>所有写操作都发生在最上层的writeable层中，这样可以大大增加base image能共享的文件内容。</p>
-
-<h4 id="参考文献">参考文献</h4>
-
-<p>1. <a href="https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information">https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information</a><br />
-2. http://aufs.sourceforge.net/<br />
-3. <a href="https://en.wikipedia.org/wiki/Aufs">https://en.wikipedia.org/wiki/Aufs </a><br />
-4. 于烨，李斌，刘思尧Docker 技术的移植性分析研究。软件，2015,（7）</p>
+<p>HTTP basic auth</p>
 
 
   </div>
   
 </div>
-
-<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_tqq" data-cmd="tqq" title="分享到腾讯微博"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a><a href="#" class="bds_evernotecn" data-cmd="evernotecn" title="分享到印象笔记"></a></div>
-<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
 
 <div class="pagination">
   

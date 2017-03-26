@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
  <title>robin Lee</title>
- <link href="http://192.168.0.105:4000/atom.xml" rel="self"/>
- <link href="http://192.168.0.105:4000/"/>
- <updated>2017-03-23T23:40:47+08:00</updated>
- <id>http://192.168.0.105:4000</id>
+ <link href="https://robinle.github.io/atom.xml" rel="self"/>
+ <link href="https://robinle.github.io/"/>
+ <updated>2017-03-26T22:50:29+08:00</updated>
+ <id>https://robinle.github.io</id>
  <author>
    <name>robin Lee</name>
    <email></email>
@@ -13,14 +13,134 @@
 
  
  <entry>
-   <title>Docker存储驱动AUFS</title>
-   <link href="http://192.168.0.105:4000/docker/2017/03/13/Docker%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8%E4%B9%8BAUFS/"/>
+   <title>Kubernetes认证与授权（一）</title>
+   <link href="https://robinle.github.io/k8s/2017/03/25/Kubernetes%E8%AE%A4%E8%AF%81%E4%B8%8E%E6%8E%88%E6%9D%83-%E4%B8%80/"/>
+   <updated>2017-03-25T00:00:00+08:00</updated>
+   <id>https://robinle.github.io/k8s/2017/03/25/Kubernetes认证与授权（一）</id>
+   <content type="html">&lt;p&gt;普通用户和Service accounts&lt;/p&gt;
+
+&lt;p&gt;client certificates&lt;/p&gt;
+
+&lt;p&gt;bearer tokens&lt;/p&gt;
+
+&lt;p&gt;an authenticating proxy&lt;/p&gt;
+
+&lt;p&gt;HTTP basic auth&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Docker存储驱动DeviceMapper</title>
+   <link href="https://robinle.github.io/docker/2017/03/13/Docker%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8%E4%B9%8BDeviceMapper/"/>
    <updated>2017-03-13T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/docker/2017/03/13/Docker存储驱动之AUFS</id>
+   <id>https://robinle.github.io/docker/2017/03/13/Docker存储驱动之DeviceMapper</id>
+   <content type="html">&lt;p&gt;上篇介绍了Docker存储驱动aufs以及AUFS文件系统，本篇聊聊&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;存储驱动以及&lt;strong&gt;Device Mapper&lt;/strong&gt;技术，&lt;strong&gt;Device Mapper&lt;/strong&gt;较之&lt;strong&gt;AUFS&lt;/strong&gt;工作相对底层。&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;device-mapper是一种linux块设备映射技术框架&quot;&gt;Device Mapper是一种Linux块设备映射技术框架&lt;/h5&gt;
+&lt;p&gt;&lt;strong&gt;Device Mapper&lt;/strong&gt;不同于&lt;strong&gt;AUFS&lt;/strong&gt;、&lt;strong&gt;ext4&lt;/strong&gt;、&lt;strong&gt;NFS&lt;/strong&gt;等，因为它并不是一个文件系统（File System），而是Linux内核映射块设备的一种技术框架。提供的一种从逻辑设备（虚拟设备）到物理设备的映射框架机制，在该机制下，用户可以很方便的根据自己的需要制定实现存储资源的管理策略。&lt;/p&gt;
+
+&lt;p&gt;当前比较流行的 Linux 下的逻辑卷管理器如 LVM2（Linux Volume Manager 2 version)、EVMS(Enterprise Volume Management System)、dmraid(Device Mapper Raid Tool)等都是基于该机制实现的。&lt;/p&gt;
+
+&lt;p&gt;值得一提的是&lt;strong&gt;Device Mapper&lt;/strong&gt;工作在块级别（block），并不工作在文件级别（file）。&lt;strong&gt;Device Mapper&lt;/strong&gt;自Linux 2.6.9后编入Linux内核，所有基于Linux内核2.6.9以后的发行版都内置&lt;strong&gt;Device Mapper&lt;/strong&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;起初Docker仅在Ubuntu和Debian上使用AUFS运行，在Docker火起来后，另一个Linux大户Redhat家族也想使用Docker，但是由于AUFS并未编入Linux内核，也并未写入Redhat家族内核，所以包括RedHat和CentOS均无法使用Docker。RedHat开发人员曾想把AUFS写入内核以支持Docker，但最终还是选用的Device mapper作为后台存储技术，而Docker方面重新设计了Docker引擎以支持多种驱动，并开发devicemapper存储驱动支持Device Mapper作为后台存储。&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;device-mapper主要分为用户空间部分和内核空间部分&quot;&gt;Device Mapper主要分为用户空间部分和内核空间部分&lt;/h5&gt;
+&lt;p&gt;用户空间相关部分主要负责配置具体的策略和控制逻辑，比如逻辑设备和哪些物理设备建立映射，怎么建立这些映射关系等，包含&lt;code class=&quot;highlighter-rouge&quot;&gt;device mapper&lt;/code&gt;库和&lt;code class=&quot;highlighter-rouge&quot;&gt;dmsetup&lt;/code&gt;工具。对用户空间创建删除&lt;code class=&quot;highlighter-rouge&quot;&gt;device mapper&lt;/code&gt;设备的操作进行封装。&lt;/p&gt;
+
+&lt;p&gt;内核中主要提供完成这些用户空间策略所需要的机制，负责具体过滤和重定向 IO 请求。通过不同的驱动插件，转发IO请求至目的设备上。附上&lt;strong&gt;Device Mapper&lt;/strong&gt;架构图。
+&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031310.gif&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;device-mapper技术分析&quot;&gt;Device Mapper技术分析&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Device Mapper&lt;/strong&gt;作为Linux块设备映射技术框架，向外部提供逻辑设备。包含三个重要概念，映射设备（mapped device），映射表（map table），目标设备（target device）。&lt;/p&gt;
+
+&lt;p&gt;映射设备即对外提供的逻辑设备，映射设备向下寻找必须找到支撑的目标设备，映射表存储映射设备和目标设备的映射关系。目标设备可以是映射设备或者物理设备，如果目标设备是一块映射设备，则属于嵌套，理论上可以无限迭代下去。&lt;/p&gt;
+
+&lt;p&gt;简而言之，&lt;strong&gt;Device Mapper&lt;/strong&gt;对外提供一个虚拟设备供使用，而这块虚拟设备可以通过映射表找到相应的地址，该地址可以指向一块物理设备，也可以指向一个虚拟设备。
+&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031311.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;映射表，是由用户空间创建，传递到内核空间。映射驱动在内核空间是插件，已实现的映射驱动（target driver） 插件包括软 raid、软加密、逻辑卷条带、多路径（mulitpath）、镜像（mirror）、快照（snapshot）等。&lt;/p&gt;
+
+&lt;p&gt;Device Mapper中的IO流处理，从虚拟设备（逻辑设备）根据映射表并指定特定的映射驱动转发到目标设备上。&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;docker中的device-mapper核心技术&quot;&gt;Docker中的Device Mapper核心技术&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;Docker&lt;/strong&gt;的&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;驱动有三个核心概念，&lt;code class=&quot;highlighter-rouge&quot;&gt;copy on-write（写复制）&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;thin-provisioning（瘦供给）&lt;/code&gt;。&lt;code class=&quot;highlighter-rouge&quot;&gt;snapshot（快照）&lt;/code&gt;，首先简单介绍一下这三种技术。&lt;/p&gt;
+
+&lt;p&gt;CoW（copy on write）写复制，一些文件系统提供的写时复制策略，&lt;strong&gt;AUFS&lt;/strong&gt;文中已介绍，不赘述。&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;支持在块级别（block）写复制。&lt;/p&gt;
+
+&lt;p&gt;Snapshot（快照技术），&lt;strong&gt;SNIA定义&lt;/strong&gt;：关于指定数据集合的一个完全可用拷贝，该拷贝包括相应数据在某个时间点（拷贝开始的时间点）的映像。快照可以是其所表示的数据的一个副本，也可以是数据的一个复制品。而从具体的技术细节来讲，快照是指向保存在存储设备中的数据的引用标记或指针。&lt;/p&gt;
+
+&lt;p&gt;接下来的档案修改或任何新增、删除动作，均不会覆写原本数据所在的磁盘区块，而是将修改部分写入其它可用的磁盘区块中。device mapper映射驱动支持snapshot技术。&lt;/p&gt;
+
+&lt;p&gt;Thin-provisioning（瘦供给），直译为精简配置，《容器与容器云》（浙大SEL实验室著）同译为精简配置，但个人认为瘦供给更易理解，瘦供给是动态分配，需要多少分配多少，区别于传统分配固定空间从而造成的资源浪费，附下图
+&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031312.jpg&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;docker中devicemapper驱动存储&quot;&gt;Docker中devicemapper驱动存储&lt;/h4&gt;
+&lt;ol&gt;
+  &lt;li&gt;首先创建一个瘦资源池（thin pool，使用瘦供给技术，存储动态分配），瘦资源池使用2块设备，一个用于存储数据，一个用于存储元数据（虚拟设备和目标设备的映射表）&lt;/li&gt;
+  &lt;li&gt;基于该瘦资源池创建基础设备（Device Mapper中的逻辑设备）&lt;/li&gt;
+  &lt;li&gt;所有的镜像数据均基于该基础设备创建快照，容器层则基于镜像层创建快照。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031313.png&quot; alt=&quot;img&quot; /&gt;
+&lt;em&gt;Tips：Docker在创建瘦资源池（thin pool）的时候，默认使用loop-lvm模式，该模式使用稀疏文件构建资源池。另一种模式是direct-lvm模式，该模式使用块设备创建资源池。docker模式采用loop-lvm是因为不需要额外配置，而在生产环境中建议使用direct-lvm模式，该模式需要手动配置数据设备从而构建瘦资源池。&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h5 id=&quot;使用devicemapper的读写操作&quot;&gt;使用devicemapper的读写操作&lt;/h5&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;使用&lt;code class=&quot;highlighter-rouge&quot;&gt;snapshot&lt;/code&gt;快照技术，每层镜像都是基于上一个镜像的快照构建。所有读取数据操作，如果数据在低层快照中，则会重定向到低层快照数据地址并取出数据。写数据会向瘦资源池（thin pool）请求空间写数据，由于&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;工作在block层，空间分配以块为单位，docker中默认块大小为64KB。&lt;/p&gt;
+
+&lt;p&gt;镜像的复用即通过&lt;code class=&quot;highlighter-rouge&quot;&gt;snapshot&lt;/code&gt;快照技术实现，有别于aufs等存储驱动。所有的新增和删除都是不覆盖原本数据块，而是使用其他可用的新的数据块进行操作。&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;总结&quot;&gt;总结&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;存储空间节省：&lt;/strong&gt;由于工作在block级，每一个block 64KB，尤其是在更新大文件的时候，不需要复制整个文件，只需要更新文件有修改所在的block，有效节省存储空间。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;存取速度：&lt;/strong&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;逻辑设备映射目标设备，目标设备构建于SSD等高速存储上，能获得更好的速度。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;兼容性好：&lt;/strong&gt;由于&lt;strong&gt;Device Mapper&lt;/strong&gt;从Linux 2.6以后就写入内核，所以尽管发行版不同，但都能使用&lt;code class=&quot;highlighter-rouge&quot;&gt;devicemapper&lt;/code&gt;驱动。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;内存资源浪费：&lt;/strong&gt;启动N个相同的容器会加载N份相同文件到内存，势必造成主机资源浪费，不建议在PaaS或者资源密集场合使用。&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Tips：关于资源浪费，因为devicemapper工作在block，很难实现pagecache&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;参考资料&quot;&gt;参考资料&lt;/h4&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#device-mapper-and-docker-performance&quot;&gt;https://docs.docker.com/engine/userguide/storagedriver/device-mapper-driver/#device-mapper-and-docker-performance&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.ibm.com/developerworks/cn/linux/l-devmapper/&quot;&gt;https://www.ibm.com/developerworks/cn/linux/l-devmapper/&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://coolshell.cn/articles/17200.html&quot;&gt;http://coolshell.cn/articles/17200.html&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.kernel.org/doc/Documentation/device-mapper/&quot;&gt;https://www.kernel.org/doc/Documentation/device-mapper/&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://hustcat.github.io/overlayfs-intro/&quot;&gt;http://hustcat.github.io/overlayfs-intro/&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Device_mapper&quot;&gt;https://en.wikipedia.org/wiki/Device_mapper&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Docker存储驱动AUFS</title>
+   <link href="https://robinle.github.io/docker/2017/03/13/Docker%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8%E4%B9%8BAUFS/"/>
+   <updated>2017-03-13T00:00:00+08:00</updated>
+   <id>https://robinle.github.io/docker/2017/03/13/Docker存储驱动之AUFS</id>
    <content type="html">&lt;p&gt;Docker存储驱动之AUFS，关于Docker的Image（镜像）与Container（容器）的存储以及存储驱动之AUFS&lt;/p&gt;
 
-&lt;h4 id=&quot;docker存储驱动简介&quot;&gt;Docker存储驱动简介&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;docker存储驱动简介&quot;&gt;Docker存储驱动简介&lt;/h4&gt;
 &lt;p&gt;Docker内置多种存储驱动，每种存储驱动都是基于Linux文件系统（Linux FS）或者卷管理（Volume Manager）技术。一般来说，Docker存储驱动的名称与文件系统（存储技术）同名，见下表对应关系&lt;/p&gt;
 
 &lt;table&gt;
@@ -58,8 +178,9 @@
   &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;h4 id=&quot;aufs简介&quot;&gt;AUFS简介&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;aufs简介&quot;&gt;AUFS简介&lt;/h4&gt;
 &lt;p&gt;AUFS，起初名为&lt;code class=&quot;highlighter-rouge&quot;&gt;AnotherUnionFileSystem&lt;/code&gt;，是一种UnionFS，V2版本后更名为&lt;code class=&quot;highlighter-rouge&quot;&gt;advanced multi-layered unification fileystem&lt;/code&gt;即高级多层统一文件系统。&lt;/p&gt;
 
 &lt;p&gt;AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的，目的也是为了提高其可靠性和性能，也在AUFS上实现了一些新的概念比如写分支平衡等（writeable branch balancing）。&lt;/p&gt;
@@ -70,8 +191,9 @@
 
 &lt;p&gt;&lt;em&gt;Tips：虽然AUFS没有进入Liunx内核，但是AUFS默认是写入Ubuntu内核的，Docker早期仅支持Ubuntu便是这个原因&lt;/em&gt;&lt;/p&gt;
 
-&lt;h4 id=&quot;aufs核心概念&quot;&gt;AUFS核心概念&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;aufs核心概念&quot;&gt;AUFS核心概念&lt;/h4&gt;
 &lt;p&gt;将多个目录合并成一个虚拟文件系统，成员目录称为虚拟文件系统的一个分支（&lt;strong&gt;branch&lt;/strong&gt;）。&lt;/p&gt;
 
 &lt;p&gt;例如，把&lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;/var&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;/opt&lt;/code&gt;三个目录联合挂着到&lt;code class=&quot;highlighter-rouge&quot;&gt;/aufs&lt;/code&gt;目录下，则&lt;code class=&quot;highlighter-rouge&quot;&gt;/aufs&lt;/code&gt;目录可见&lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;/var&lt;/code&gt;，&lt;code class=&quot;highlighter-rouge&quot;&gt;/opt&lt;/code&gt;目录下的所有文件。而每个成员目录，则称为虚拟文件系统的一个&lt;strong&gt;branch&lt;/strong&gt;。&lt;/p&gt;
@@ -90,8 +212,9 @@
 
 &lt;p&gt;AUFS每层branch可以动态的增加删除，每增加一层，下层默认置为&lt;strong&gt;ro&lt;/strong&gt;，最上一层为&lt;strong&gt;rw&lt;/strong&gt;。删除branch是在aufs挂载点移除，并未删除挂载目录。&lt;/p&gt;
 
-&lt;h4 id=&quot;docker中的aufs&quot;&gt;Docker中的AUFS&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;docker中的aufs&quot;&gt;Docker中的AUFS&lt;/h4&gt;
 &lt;p&gt;AUFS是Docker使用的第一个存储驱动，长时间以来，一直很稳定。虽然目前Docker支持多种存储驱动，而在Ubuntu中默认使用aufs存储驱动，可以使用docker info指令进行查看。对于Docker而言，AUFS有很多优秀的特点，比如&lt;strong&gt;快速启动容器&lt;/strong&gt;，&lt;strong&gt;高效存储利用率&lt;/strong&gt;，&lt;strong&gt;高效内存利用率&lt;/strong&gt;等。&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Docker镜像和AUFS branch对应关系&lt;/strong&gt;&lt;/p&gt;
@@ -108,6 +231,8 @@
 
 &lt;p&gt;如上图中基于同一个image运行两个容器，低层image一致，每启动一个新容器，便会新建一个目录作为aufs branch并与image branch进行联合挂载。&lt;/p&gt;
 
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
 &lt;p&gt;&lt;strong&gt;容器文件读写与删除&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;当容器需要修改一个文件，而该文件位于低层branch时，顶层branch会直接复制低层branch的文件至顶层再进行修改，而低层的文件不变，这种方式即是&lt;strong&gt;CoW&lt;/strong&gt;技术（写复制），AUFS默认支持&lt;strong&gt;Cow&lt;/strong&gt;技术。&lt;/p&gt;
@@ -122,6 +247,8 @@
 
 &lt;p&gt;&lt;img src=&quot;https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031309.png&quot; alt=&quot;img&quot; /&gt;&lt;/p&gt;
 
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
+
 &lt;p&gt;&lt;strong&gt;Docker本地存储目录&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;Docker镜像存在在&lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/docker/aufs/diff/&lt;/code&gt;目录下。&lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/docker/aufs/layers/&lt;/code&gt;目录存储image的元信息，主要是image的每一层layer组织顺序（AUFS branch堆积顺序）。&lt;/p&gt;
@@ -130,8 +257,9 @@
 
 &lt;p&gt;&lt;em&gt;Tips：早期镜像的每一层数据存储在&lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/docker/aufs/diff/&lt;/code&gt;目录下，镜像ID与目录名同名，从docker v1.10版本之后镜像ID不再与&lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/docker/aufs/diff/&lt;/code&gt;目录下的目录同名，而是采用一个安全的hash值作为镜像存储文件夹名称。&lt;/em&gt;&lt;/p&gt;
 
-&lt;h4 id=&quot;总结&quot;&gt;总结&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;总结&quot;&gt;总结&lt;/h4&gt;
 &lt;p&gt;采用 aufs作为 docker 的容器存储驱动，使用AUFS技术，能够提供如下好处&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;节省存储空间&lt;/strong&gt;：多个容器可以共享 基础镜像（base image）存储&lt;/p&gt;
@@ -142,8 +270,9 @@
 
 &lt;p&gt;&lt;strong&gt;允许在不更改基础镜像的同时修改其目录中的文件：&lt;/strong&gt;所有写操作都发生在最上层的writeable层中，这样可以大大增加base image能共享的文件内容。&lt;/p&gt;
 
-&lt;h4 id=&quot;参考文献&quot;&gt;参考文献&lt;/h4&gt;
+&lt;p&gt;&lt;br /&gt;&lt;/p&gt;
 
+&lt;h4 id=&quot;参考文献&quot;&gt;参考文献&lt;/h4&gt;
 &lt;p&gt;1. &lt;a href=&quot;https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information&quot;&gt;https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information&lt;/a&gt;&lt;br /&gt;
 2. http://aufs.sourceforge.net/&lt;br /&gt;
 3. &lt;a href=&quot;https://en.wikipedia.org/wiki/Aufs&quot;&gt;https://en.wikipedia.org/wiki/Aufs &lt;/a&gt;&lt;br /&gt;
@@ -154,9 +283,9 @@
  
  <entry>
    <title>容器部署kubernetes</title>
-   <link href="http://192.168.0.105:4000/k8s/2017/01/14/%E5%AE%B9%E5%99%A8%E9%83%A8%E7%BD%B2kubernetes/"/>
+   <link href="https://robinle.github.io/k8s/2017/01/14/%E5%AE%B9%E5%99%A8%E9%83%A8%E7%BD%B2kubernetes/"/>
    <updated>2017-01-14T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/k8s/2017/01/14/容器部署kubernetes</id>
+   <id>https://robinle.github.io/k8s/2017/01/14/容器部署kubernetes</id>
    <content type="html">&lt;p&gt;本文介绍在使用容器方式部署kubernetes，在centos7主机上，基于docker v1.12.5部署kubernetes v1.5.0。仅部署kubernetes必要组件，各个组件均封装成容器部署运行。&lt;/p&gt;
 
 &lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
@@ -385,9 +514,9 @@ ADD kube-scheduler /usr/local/bin/
  
  <entry>
    <title>ELK容器化部署</title>
-   <link href="http://192.168.0.105:4000/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <link href="https://robinle.github.io/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
    <updated>2017-01-06T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/docker/2017/01/06/ELK容器化部署</id>
+   <id>https://robinle.github.io/docker/2017/01/06/ELK容器化部署</id>
    <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
 
 &lt;p&gt;在一台安装有&lt;strong&gt;docker v1.12.5&lt;/strong&gt;版本的主机上，测试ELK容器化运行，所需镜像及版本如下：&lt;/p&gt;
@@ -506,9 +635,9 @@ unicomp6.unicomp.net - - [01/Jul/1995:00:00:06 -0400] &quot;GET /shuttle/countdo
  
  <entry>
    <title>Docker日志解决方案（rsyslog+logstash）</title>
-   <link href="http://192.168.0.105:4000/docker/2017/01/05/Docker-rsyslog-logstash/"/>
+   <link href="https://robinle.github.io/docker/2017/01/05/Docker-rsyslog-logstash/"/>
    <updated>2017-01-05T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/docker/2017/01/05/Docker-rsyslog-logstash</id>
+   <id>https://robinle.github.io/docker/2017/01/05/Docker-rsyslog-logstash</id>
    <content type="html">&lt;h3 id=&quot;测试环境&quot;&gt;测试环境&lt;/h3&gt;
 
 &lt;table&gt;
@@ -685,9 +814,9 @@ output {
  
  <entry>
    <title>Kubernetes容器化部署</title>
-   <link href="http://192.168.0.105:4000/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
+   <link href="https://robinle.github.io/k8s/2016/12/29/Kubernetes%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/k8s/2016/12/29/Kubernetes容器化部署</id>
+   <id>https://robinle.github.io/k8s/2016/12/29/Kubernetes容器化部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;
@@ -785,9 +914,9 @@ root@k8s-master:/home/ubuntu/k8s_install_images#
  
  <entry>
    <title>Kubernetes二进制部署</title>
-   <link href="http://192.168.0.105:4000/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
+   <link href="https://robinle.github.io/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/"/>
    <updated>2016-12-29T00:00:00+08:00</updated>
-   <id>http://192.168.0.105:4000/k8s/2016/12/29/Kubernetes二进制部署</id>
+   <id>https://robinle.github.io/k8s/2016/12/29/Kubernetes二进制部署</id>
    <content type="html">&lt;p&gt;本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对&lt;strong&gt;裸机或虚拟机&lt;/strong&gt;环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。&lt;/p&gt;
 
 &lt;h3 id=&quot;部署方式&quot;&gt;部署方式&lt;/h3&gt;

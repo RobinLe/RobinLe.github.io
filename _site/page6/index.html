@@ -80,6 +80,20 @@
       
         
           
+            <a class="sidebar-nav-item" href="/niceblogs/">好的博客</a>
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
         
       
         
@@ -114,94 +128,192 @@
   
   <div class="post">
     <h1 class="post-title">
-      <a href="/k8s/2016/12/29/Kubernetes%E4%BA%8C%E8%BF%9B%E5%88%B6%E9%83%A8%E7%BD%B2/">
-        Kubernetes二进制部署
+      <a href="/docker/2017/01/05/Docker-rsyslog-logstash/">
+        Docker日志解决方案（rsyslog+logstash）
       </a>
     </h1>
 
-    <span class="post-date">29 Dec 2016</span>
+    <span class="post-date">05 Jan 2017</span>
 
-    <p>本文介绍如何部署Kubernetes，由于基础设施环境多样，本文部署情况仅仅针对<strong>裸机或虚拟机</strong>环境，暂不支持公有云如GCE，AWS，DigitOcean环境，也不支持直接与虚拟化系统如ESXi进行部署。</p>
+    <h3 id="测试环境">测试环境</h3>
 
-<h3 id="部署方式">部署方式</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: center">Host</th>
+      <th style="text-align: center">OS</th>
+      <th style="text-align: center">IP</th>
+      <th style="text-align: center">Services</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center">syslog服务器</td>
+      <td style="text-align: center">Ubuntu16.04</td>
+      <td style="text-align: center">192.168.3.48</td>
+      <td style="text-align: center">rsyslog，logstash</td>
+    </tr>
+    <tr>
+      <td style="text-align: center">docker服务器</td>
+      <td style="text-align: center">Ubuntu16.04</td>
+      <td style="text-align: center">192.168.3.45</td>
+      <td style="text-align: center">nginx</td>
+    </tr>
+  </tbody>
+</table>
 
-<p>Kubernetes部署方式分为两种，二进制方式或容器化方式</p>
-
-<ol>
-  <li>二进制：直接部署所有组件到主机</li>
-  <li>容器化：所有组件在容器内方式运行</li>
-</ol>
+<p>docker服务器启动nginx容器，nginx容器日志通过syslog传到syslog服务器，syslog服务器把日志输出到logstash中。</p>
 
 <hr />
 
-<h3 id="二进制部署kubernetes">二进制部署Kubernetes</h3>
+<h3 id="syslog日志服务器配置">Syslog日志服务器配置</h3>
 
-<p><strong>一、依赖</strong></p>
+<p>修改<strong>rsyslog</strong>配置文件<code class="highlighter-rouge">/etc/rsyslog.conf</code>，取消<strong>TCP</strong>或者<strong>UDP</strong>日志接收模块注释，下图开启<strong>TCP514端口</strong>接收日志</p>
 
-<ul>
-  <li>docker-engine 1.12</li>
-  <li>ubuntu14.04</li>
-</ul>
-
-<p><strong>二、下载安装包</strong></p>
-
-<p>下载<a href="\\192.168.3.36\lan_share_robin\k8s_install_binaries.tar.gz">k8s_install_binaries</a>到<strong>master</strong>机器，解压安装包</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/11.PNG" alt="" /></p>
-
-<p>进入<code class="highlighter-rouge">cluster</code>目录，编辑<code class="highlighter-rouge">setup.sh</code>脚本文件</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/12.PNG" alt="" /></p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/13.PNG" alt="" /></p>
-
-<p>需要根据具体部署的集群信息更新<code class="highlighter-rouge">setup.sh</code>脚本文件</p>
-
-<ul>
-  <li><strong>nodes</strong>：所有节点信息<code class="highlighter-rouge">username@ip</code>，以空格分开，第一个默认为<strong>master</strong>节点</li>
-  <li><strong>roles</strong>：<code class="highlighter-rouge">a代表master</code>，<code class="highlighter-rouge">i代表node</code>，<code class="highlighter-rouge">ai代表master node</code>，定义<strong>nodes</strong>参数所有节点的角色信息</li>
-  <li><strong>NUM_NODES</strong>：节点数量，集群共有多少节点</li>
-  <li><strong>SERVICE_CLUSTER_IP_RANGE</strong>：定义<code class="highlighter-rouge">service IP</code>范围，给定一个<strong><code class="highlighter-rouge">私有IP</code></strong>范围，确保不要和<code class="highlighter-rouge">本地私有IP </code><strong>冲突</strong></li>
-  <li><strong>FLANNEL_NET</strong>：定义<code class="highlighter-rouge">flannel overlay</code>网络地址，确保不要与<strong>SERVICE_CLUSTER_IP_RANGE</strong>冲突。</li>
-</ul>
-
-<p>赋予<code class="highlighter-rouge">setup.sh</code>执行权限，并执行<code class="highlighter-rouge">setup.sh</code>脚本</p>
-
-<p><strong>重要：如果机器没有<code class="highlighter-rouge">ssh</code>秘钥，则生成秘钥文件，可以不输入直接回车自动生成</strong></p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/14.PNG" alt="" /></p>
-
-<p>安装过程中，需要输入多次<strong>master</strong>节点和<strong>node</strong>节点的密码信息，执行结束会得到如下提示</p>
-
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/15.PNG" alt="" /></p>
-
-<p><strong>master</strong>节点查看节点信息，验证集群状态</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# kubectl get nodes
-NAME           STATUS    AGE
-192.168.3.44   Ready     5m
-192.168.3.48   Ready     4m
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# vi /etc/rsyslog.conf
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/16.PNG" alt="" /></p>
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/18.png" alt="" /></p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>root@k8s-master:/home/ubuntu/k8s_install_binaries/cluster# ps -ef
+<p>创建日志转发模板文件<code class="highlighter-rouge">/etc/rsyslog.d/01-template-json.conf</code>，使用<strong>json</strong>格式进行日志转发</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# touch /etc/rsyslog.d/01-template-json.conf
+</code></pre>
+</div>
+<p>输入以下文件内容吗，定义<strong>syslog</strong>的<strong>json</strong>模板及各个字段，<a href="http://www.rsyslog.com/doc/v8-stable/configuration/properties.html">更多字段内容</a></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>template(name="json-template"
+  type="list") {
+
+    constant(value="{")
+      constant(value="\"@timestamp\":\"")     property(name="timereported" dateFormat="rfc3339")
+      constant(value="\",\"@version\":\"1")
+      constant(value="\",\"message\":\"")     property(name="msg" format="json")
+      constant(value="\",\"sysloghost\":\"")  property(name="hostname")
+      constant(value="\",\"severity\":\"")    property(name="syslogseverity-text")
+      constant(value="\",\"facility\":\"")    property(name="syslogfacility-text")
+      constant(value="\",\"programname\":\"") property(name="programname")
+      constant(value="\",\"procid\":\"")      property(name="procid")
+    constant(value="\"}\n")
+}
 </code></pre>
 </div>
 
-<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/17.PNG" alt="" /></p>
+<p>创建日志转发配置文件<code class="highlighter-rouge">/etc/rsyslog.d/60-output.conf</code></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# touch /etc/rsyslog.d/60-output.conf
+</code></pre>
+</div>
+<p>输入以下内容，定义所有日志使用<code class="highlighter-rouge">json-template</code>模板转发到<code class="highlighter-rouge">192.168.3.48:10514</code>，<strong>2个@@表示TCP端口，1个@表示UDP端口</strong></p>
+<div class="highlighter-rouge"><pre class="highlight"><code># This line sends all lines to defined IP address at port 10514,
+# using the "json-template" format template
+
+*.*                         @@192.168.3.48:10514;json-template
+</code></pre>
+</div>
+
+<p>重启<strong>rsyslog</strong>服务</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# /etc/init.d/rsyslog restart
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/22.png" alt="" /></p>
+
+<hr />
+
+<h3 id="docker服务器配置syslog驱动">Docker服务器配置syslog驱动</h3>
+
+<p>为docker daemon配置syslog驱动，并设置远程syslog日志服务器地址和端口接收日志</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.45:~# dockerd start --log-driver=syslog \
+--log-opt syslog-address=tcp://192.168.3.48:514 &amp;
+</code></pre>
+</div>
+
+<blockquote>
+  <p>或者启动容器时配置syslog中心服务器记录日志（不建议使用该方式）</p>
+  <div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.45:~# docker run --log-driver=syslog \
+--log-opt syslog-address=tcp://192.168.3.48:514
+</code></pre>
+  </div>
+</blockquote>
+
+<p>启动nginx容器，访问nginx容器</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.45:~# docker run -it --rm -p 80:80 nginx
+root@192.168.3.45:~# curl 192.168.3.45
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/19.png" alt="" /></p>
+
+<p>查看容器，输出了nginx访问日志</p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/20.png" alt="" /></p>
+
+<p>查看<strong>syslog服务器</strong>日志，确定接收到<strong>nginx容器</strong>日志</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# cat /var/log/syslog
+</code></pre>
+</div>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/21.png" alt="" /></p>
+
+<hr />
+
+<h3 id="logstash配置容器方式">logstash配置（容器方式）</h3>
+
+<p>logstash容器运行在syslog服务器上，下载logstash镜像，创建logstash配置文件</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker pull logstash
+root@192.168.3.48:~# cd ~ 
+root@192.168.3.48:~# mkdir logstash_pipeline
+root@192.168.3.48:~# vi logstash_pipeline/logstash.conf
+</code></pre>
+</div>
+
+<p>定义<code class="highlighter-rouge">logstash</code>输入输出与过滤条件，输入从<strong>tcp10514</strong>端口接受日志数据（也可以直接读取syslog采集，但需要对syslog文件有读权限），直接输出到标准输出，<a href="https://www.elastic.co/guide/en/logstash/current/config-examples.html">更多配置参考</a></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>input {
+  tcp {
+    port =&gt; 10514
+    codec =&gt; "json"
+    type =&gt; "rsyslog"
+  }
+#    file { 
+#       path =&gt; "/logs/syslog" 
+#       start_position =&gt; "beginning"
+#    }
+# stdin { }
+}
+
+filter { }
+
+output {
+    stdout { }
+}
+</code></pre>
+</div>
+
+<p>启动<strong>logstash</strong>容器，接收<strong>syslog</strong>日志</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>root@192.168.3.48:~# docker run -it --rm -p 192.168.3.48:10514:10514 -v ~/logstash_pipeline/:/logstash_pipeline logstash -f /logstash_pipeline/logstash.conf
+</code></pre>
+</div>
+
+<p>查看<strong>logstash</strong>容器输出，成功接收到<strong>syslog</strong>日志。数据流向<code class="highlighter-rouge">nginx容器--&gt;syslog服务器--&gt;logstash容器</code></p>
+
+<p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/23.png" alt="" /></p>
+
 
   </div>
   
 </div>
 
-<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_tqq" data-cmd="tqq" title="分享到腾讯微博"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a><a href="#" class="bds_evernotecn" data-cmd="evernotecn" title="分享到印象笔记"></a></div>
-<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
-
 <div class="pagination">
   
-    <span class="pagination-item older"><</span>
+    <a class="pagination-item older" href="/page7"><</a>
   
   
     

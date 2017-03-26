@@ -80,6 +80,20 @@
       
         
           
+            <a class="sidebar-nav-item" href="/niceblogs/">好的博客</a>
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
         
       
         
@@ -115,8 +129,9 @@
   <span class="post-date">13 Mar 2017</span>
   <p>Docker存储驱动之AUFS，关于Docker的Image（镜像）与Container（容器）的存储以及存储驱动之AUFS</p>
 
-<h4 id="docker存储驱动简介">Docker存储驱动简介</h4>
+<p><br /></p>
 
+<h4 id="docker存储驱动简介">Docker存储驱动简介</h4>
 <p>Docker内置多种存储驱动，每种存储驱动都是基于Linux文件系统（Linux FS）或者卷管理（Volume Manager）技术。一般来说，Docker存储驱动的名称与文件系统（存储技术）同名，见下表对应关系</p>
 
 <table>
@@ -154,8 +169,9 @@
   </tbody>
 </table>
 
-<h4 id="aufs简介">AUFS简介</h4>
+<p><br /></p>
 
+<h4 id="aufs简介">AUFS简介</h4>
 <p>AUFS，起初名为<code class="highlighter-rouge">AnotherUnionFileSystem</code>，是一种UnionFS，V2版本后更名为<code class="highlighter-rouge">advanced multi-layered unification fileystem</code>即高级多层统一文件系统。</p>
 
 <p>AUFS是一位名为岡岛纯二郎的日本人于2006年基于UnionFS开发的，目的也是为了提高其可靠性和性能，也在AUFS上实现了一些新的概念比如写分支平衡等（writeable branch balancing）。</p>
@@ -166,8 +182,9 @@
 
 <p><em>Tips：虽然AUFS没有进入Liunx内核，但是AUFS默认是写入Ubuntu内核的，Docker早期仅支持Ubuntu便是这个原因</em></p>
 
-<h4 id="aufs核心概念">AUFS核心概念</h4>
+<p><br /></p>
 
+<h4 id="aufs核心概念">AUFS核心概念</h4>
 <p>将多个目录合并成一个虚拟文件系统，成员目录称为虚拟文件系统的一个分支（<strong>branch</strong>）。</p>
 
 <p>例如，把<code class="highlighter-rouge">/tmp</code>，<code class="highlighter-rouge">/var</code>，<code class="highlighter-rouge">/opt</code>三个目录联合挂着到<code class="highlighter-rouge">/aufs</code>目录下，则<code class="highlighter-rouge">/aufs</code>目录可见<code class="highlighter-rouge">/tmp</code>，<code class="highlighter-rouge">/var</code>，<code class="highlighter-rouge">/opt</code>目录下的所有文件。而每个成员目录，则称为虚拟文件系统的一个<strong>branch</strong>。</p>
@@ -186,8 +203,9 @@
 
 <p>AUFS每层branch可以动态的增加删除，每增加一层，下层默认置为<strong>ro</strong>，最上一层为<strong>rw</strong>。删除branch是在aufs挂载点移除，并未删除挂载目录。</p>
 
-<h4 id="docker中的aufs">Docker中的AUFS</h4>
+<p><br /></p>
 
+<h4 id="docker中的aufs">Docker中的AUFS</h4>
 <p>AUFS是Docker使用的第一个存储驱动，长时间以来，一直很稳定。虽然目前Docker支持多种存储驱动，而在Ubuntu中默认使用aufs存储驱动，可以使用docker info指令进行查看。对于Docker而言，AUFS有很多优秀的特点，比如<strong>快速启动容器</strong>，<strong>高效存储利用率</strong>，<strong>高效内存利用率</strong>等。</p>
 
 <p><strong>Docker镜像和AUFS branch对应关系</strong></p>
@@ -204,6 +222,8 @@
 
 <p>如上图中基于同一个image运行两个容器，低层image一致，每启动一个新容器，便会新建一个目录作为aufs branch并与image branch进行联合挂载。</p>
 
+<p><br /></p>
+
 <p><strong>容器文件读写与删除</strong></p>
 
 <p>当容器需要修改一个文件，而该文件位于低层branch时，顶层branch会直接复制低层branch的文件至顶层再进行修改，而低层的文件不变，这种方式即是<strong>CoW</strong>技术（写复制），AUFS默认支持<strong>Cow</strong>技术。</p>
@@ -218,6 +238,8 @@
 
 <p><img src="https://raw.githubusercontent.com/RobinLe/RobinLe.github.io/master/_posts/images/2017031309.png" alt="img" /></p>
 
+<p><br /></p>
+
 <p><strong>Docker本地存储目录</strong></p>
 
 <p>Docker镜像存在在<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下。<code class="highlighter-rouge">/var/lib/docker/aufs/layers/</code>目录存储image的元信息，主要是image的每一层layer组织顺序（AUFS branch堆积顺序）。</p>
@@ -226,8 +248,9 @@
 
 <p><em>Tips：早期镜像的每一层数据存储在<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下，镜像ID与目录名同名，从docker v1.10版本之后镜像ID不再与<code class="highlighter-rouge">/var/lib/docker/aufs/diff/</code>目录下的目录同名，而是采用一个安全的hash值作为镜像存储文件夹名称。</em></p>
 
-<h4 id="总结">总结</h4>
+<p><br /></p>
 
+<h4 id="总结">总结</h4>
 <p>采用 aufs作为 docker 的容器存储驱动，使用AUFS技术，能够提供如下好处</p>
 
 <p><strong>节省存储空间</strong>：多个容器可以共享 基础镜像（base image）存储</p>
@@ -238,8 +261,9 @@
 
 <p><strong>允许在不更改基础镜像的同时修改其目录中的文件：</strong>所有写操作都发生在最上层的writeable层中，这样可以大大增加base image能共享的文件内容。</p>
 
-<h4 id="参考文献">参考文献</h4>
+<p><br /></p>
 
+<h4 id="参考文献">参考文献</h4>
 <p>1. <a href="https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information">https://docs.docker.com/engine/userguide/storagedriver/aufs-driver/#related-information</a><br />
 2. http://aufs.sourceforge.net/<br />
 3. <a href="https://en.wikipedia.org/wiki/Aufs">https://en.wikipedia.org/wiki/Aufs </a><br />
@@ -249,32 +273,32 @@
 </div>
 
 <div class="related">
-  <h2>Related Posts</h2>
+  <h2>更多文章</h2>
   <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/k8s/2017/03/25/Kubernetes%E8%AE%A4%E8%AF%81%E4%B8%8E%E6%8E%88%E6%9D%83-%E4%B8%80/">
+            Kubernetes认证与授权（一）
+            <small>25 Mar 2017</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/docker/2017/03/13/Docker%E5%AD%98%E5%82%A8%E9%A9%B1%E5%8A%A8%E4%B9%8BDeviceMapper/">
+            Docker存储驱动DeviceMapper
+            <small>13 Mar 2017</small>
+          </a>
+        </h3>
+      </li>
     
       <li>
         <h3>
           <a href="/k8s/2017/01/14/%E5%AE%B9%E5%99%A8%E9%83%A8%E7%BD%B2kubernetes/">
             容器部署kubernetes
             <small>14 Jan 2017</small>
-          </a>
-        </h3>
-      </li>
-    
-      <li>
-        <h3>
-          <a href="/docker/2017/01/06/ELK%E5%AE%B9%E5%99%A8%E5%8C%96%E9%83%A8%E7%BD%B2/">
-            ELK容器化部署
-            <small>06 Jan 2017</small>
-          </a>
-        </h3>
-      </li>
-    
-      <li>
-        <h3>
-          <a href="/docker/2017/01/05/Docker-rsyslog-logstash/">
-            Docker日志解决方案（rsyslog+logstash）
-            <small>05 Jan 2017</small>
           </a>
         </h3>
       </li>

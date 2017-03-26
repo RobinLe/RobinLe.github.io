@@ -4,9 +4,21 @@ title: 简介
 ---
 
 ## robin Lee的个人博客
-#### 毕业于[重庆邮电大学](http://www.cqupt.edu.cn/cqupt/index.shtml)  
-#### 曾就职于[绿盟科技](http://www.nsfocus.com/)  
-#### 曾就职于[重庆熠巨数字传媒](http://www.ea-retina.com/)  
-#### 曾就职于[HPE](https://www.hpe.com/us/en/home.html)  
-#### 目前就职于[有容云](http://www.youruncloud.com/)
 
+<br/><br/>
+
+**千山鸟飞绝，**  
+**万径人踪灭。**  
+**孤舟蓑笠翁，**  
+**独钓寒江雪。**  
+
+<br/><br/>
+
+**Life's a little bit messy.**  
+**We all make mistakes.**  
+**No matter what type of animal you are, change starts with you.**
+
+<br/><br/>
+
+**毕业于重庆邮电大学**<br/>
+**IT搬砖工程师**
